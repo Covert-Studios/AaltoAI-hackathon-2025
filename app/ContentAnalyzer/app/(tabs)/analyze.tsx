@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react'
-import { View, Text, StyleSheet, Button, FlatList, TouchableOpacity, Alert, ActivityIndicator } from 'react-native'
+import { View, Text, StyleSheet, Button, FlatList, TouchableOpacity, Alert, ActivityIndicator, ScrollView } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { Navbar } from '../components/Navbar'
-import { useRouter } from 'expo-router'
+import { useRouter, useLocalSearchParams } from 'expo-router'
 import { useAuth } from '@clerk/clerk-expo'
 import * as ImagePicker from 'expo-image-picker'
 
@@ -117,6 +117,27 @@ export default function AnalyzeScreen() {
   )
 }
 
+function AnalyzeDetailScreen() {
+  const { results } = useLocalSearchParams();
+  const parsedResults = results ? JSON.parse(results) : [];
+
+  return (
+    <ScrollView contentContainerStyle={styles.container}>
+      <Ionicons name="analytics-outline" size={48} color="#0a7ea4" style={{ marginBottom: 16 }} />
+      <Text style={styles.title}>Analysis Results</Text>
+      {parsedResults.length > 0 ? (
+        parsedResults.map((result, index) => (
+          <View key={index} style={styles.resultItem}>
+            <Text style={styles.resultText}>{result[0]}: {result[1]}</Text>
+          </View>
+        ))
+      ) : (
+        <Text style={styles.resultText}>No results found.</Text>
+      )}
+    </ScrollView>
+  );
+}
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -161,5 +182,20 @@ const styles = StyleSheet.create({
   historyDate: {
     fontSize: 12,
     color: '#888',
+  },
+  resultItem: {
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 8,
+    width: '100%',
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  resultText: {
+    fontSize: 16,
+    color: '#444',
   },
 })
