@@ -62,6 +62,10 @@ def upload_video():
     video_path = os.path.join(UPLOAD_FOLDER, video.filename)
     video.save(video_path)
 
+    # Log the received video
+    print(f"[INFO] Received video: {video.filename}")
+    print(f"[INFO] Saved to: {video_path}")
+
     return jsonify({"message": "Video uploaded successfully", "path": video_path}), 200
 
 @app.route('/analyze', methods=['POST'])
@@ -78,6 +82,10 @@ def analyze_video():
     video_path = os.path.join("uploads", video.filename)
     os.makedirs("uploads", exist_ok=True)
     video.save(video_path)
+
+    # Log the received video
+    print(f"[INFO] Received video for analysis: {video.filename}")
+    print(f"[INFO] Saved to: {video_path}")
 
     # Call the CLIP classification script
     frame_dir = "frames"
@@ -99,6 +107,10 @@ def analyze_video():
     # Summarize results
     topics_detected = [topic for _, topic in results]
     summary = Counter(topics_detected).most_common()
+
+    # Log the analysis summary
+    print(f"[INFO] Analysis complete for: {video.filename}")
+    print(f"[INFO] Summary: {summary}")
 
     return jsonify({"summary": summary})
 
