@@ -1,6 +1,6 @@
 import { useSignIn } from '@clerk/clerk-expo'
 import { Link, useRouter } from 'expo-router'
-import { Text, TextInput, TouchableOpacity, View, StyleSheet, Modal, Animated } from 'react-native'
+import { Text, TextInput, TouchableOpacity, View, StyleSheet, Modal, Animated, ActivityIndicator } from 'react-native' // <-- add ActivityIndicator
 import React from 'react'
 import { HeaderTitle } from '@react-navigation/elements'
 
@@ -13,11 +13,11 @@ export default function Page() {
   const [error, setError] = React.useState<string | null>(null)
   const [showError, setShowError] = React.useState(false)
   const fadeAnim = React.useRef(new Animated.Value(0)).current
+  const [loading, setLoading] = React.useState(false) // <-- add loading state
 
-  // Handle the submission of the sign-in form
   const onSignInPress = async () => {
     if (!isLoaded) return
-
+    setLoading(true)
     try {
       const signInAttempt = await signIn.create({
         identifier: emailAddress,
@@ -54,6 +54,8 @@ export default function Page() {
         useNativeDriver: true,
       }).start()
       console.error(JSON.stringify(err, null, 2))
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -66,6 +68,15 @@ export default function Page() {
       setShowError(false)
       setError(null)
     })
+  }
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color="#3a86ff" />
+        <Text style={{ marginTop: 18, color: '#3a86ff', fontSize: 18 }}>Signing in...</Text>
+      </View>
+    )
   }
 
   return (
