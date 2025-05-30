@@ -44,7 +44,6 @@ def get_cls():
     result = subprocess.check_output(['cls']).decode('utf-8')
     return jsonify({'cls': result.strip()})
 
-<<<<<<< HEAD
 @app.route('/upload', methods=['POST'])
 @require_api_key
 def upload_video():
@@ -111,7 +110,5 @@ def analyze_video():
 
     return jsonify({"summary": summary})
 
-=======
->>>>>>> 961718af9e53fb2da14ed33dd9ccc991f3350a89
 if __name__ == '__main__':
     app.run()
