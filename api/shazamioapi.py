@@ -23,4 +23,3 @@ async def test_ssl():
 
 loop = asyncio.get_event_loop()
 loop.run_until_complete(main())
-asyncio.run(test_ssl())
