@@ -1,52 +1,37 @@
-import clip
-import torch
-from PIL import Image
-import cv2
 import os
 import glob
 from collections import Counter
-from tqdm import tqdm  # Optional but helpful
+from tqdm import tqdm
+from PIL import Image
+import torch
+import clip
+from torchvision.transforms import Compose, Resize, CenterCrop, ToTensor, Normalize
+import cv2
 
-# Load CLIP
-device = "cuda" if torch.cuda.is_available() else "cpu"
-model, preprocess = clip.load("ViT-B/32", device=device)
+# Step 1: Load topics from topics.txt
+def load_topics(file_path):
+    with open(file_path, "r") as file:
+        topics = [line.strip() for line in file if line.strip() and not line.startswith("#")]
+    return topics
 
-# Step 1: Extract frames
+# Step 2: Extract frames from video
 def extract_frames(video_path, output_dir, frame_interval=2):
     os.makedirs(output_dir, exist_ok=True)
-    cap = cv2.VideoCapture(video_path)
-    fps = cap.get(cv2.CAP_PROP_FPS)
-    count = 0
-    saved = 0
+    video = cv2.VideoCapture(video_path)
+    frame_count = 0
+    success, frame = video.read()
 
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            break
-        if int(cap.get(1)) % int(fps * frame_interval) == 0:
-            frame_path = os.path.join(output_dir, f"frame{saved:04d}.jpg")
+    while success:
+        if frame_count % frame_interval == 0:
+            frame_path = os.path.join(output_dir, f"frame_{frame_count:04d}.jpg")
             cv2.imwrite(frame_path, frame)
-            saved += 1
-        count += 1
+        success, frame = video.read()
+        frame_count += 1
 
-    cap.release()
-    return saved
-
-# Step 2: Define topics
-topics = [
-    "a football match", "a basketball game", "a baseball game", "a cooking show",
-    "a nature documentary", "a person giving a lecture", "a music concert",
-    "a workout video", "a wedding", "a person running", "a dog playing",
-    "a news broadcast", "a haunted house", "a sword fight", "a cosplay event"
-]
-
-text_tokens = clip.tokenize(topics).to(device)
-with torch.no_grad():
-    text_features = model.encode_text(text_tokens)
-    text_features /= text_features.norm(dim=-1, keepdim=True)
+    video.release()
 
 # Step 3: Analyze frames
-def analyze_frames(frame_dir):
+def analyze_frames(frame_dir, model, preprocess, text_features, topics, device):
     frame_paths = sorted(glob.glob(f"{frame_dir}/*.jpg"))
     results = []
 
@@ -62,13 +47,35 @@ def analyze_frames(frame_dir):
 
     return results
 
-# Step 4: Run everything
-extract_frames("my_video.mp4", "frames", frame_interval=2)
-results = analyze_frames("frames")
-topics_detected = [topic for _, topic in results]
-summary = Counter(topics_detected).most_common()
+# Main function
+if __name__ == "__main__":
+    # Step 1: Load topics
+    topics_file = "topics.txt"  # Path to your topics.txt file
+    topics = load_topics(topics_file)
+    print(f"Loaded {len(topics)} topics:")
+    for topic in topics:
+        print(topic)
 
-# Step 5: Print summary
-print("🔍 Video Topic Summary:")
-for topic, count in summary:
-    print(f"{topic}: {count} frames")
+    # Step 2: Load CLIP model
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    model, preprocess = clip.load("ViT-B/32", device=device)
+
+    text_tokens = clip.tokenize(topics).to(device)
+    with torch.no_grad():
+        text_features = model.encode_text(text_tokens)
+        text_features /= text_features.norm(dim=-1, keepdim=True)
+
+    # Step 3: Extract frames and analyze them
+    video_path = "/Users/otsoreijonen/Downloads/Theyre my favorite  #carsales #carsalesman #cardealership #dealership.mp4"
+    frame_dir = "frames"
+    extract_frames(video_path, frame_dir, frame_interval=2)
+    results = analyze_frames(frame_dir, model, preprocess, text_features, topics, device)
+
+    # Step 4: Summarize results
+    topics_detected = [topic for _, topic in results]
+    summary = Counter(topics_detected).most_common()
+
+    # Step 5: Print summary
+    print("\nSummary of detected topics:")
+    for topic, count in summary:
+        print(f"{topic}: {count}")
