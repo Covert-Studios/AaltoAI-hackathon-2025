@@ -1,6 +1,10 @@
-import api.whisperstuff as whisperstuff
-import torch
+import whisper
+import ssl
 
-model = whisperstuff.load_model("turbo")
-result = model.transcribe("/Users/otsoreijonen/Downloads")
+# Bypass SSL verification (not recommended for production)
+ssl._create_default_https_context = ssl._create_unverified_context
+
+# Load the Whisper model
+model = whisper.load_model("base")  # Use "base" or another valid model name
+result = model.transcribe("/Users/otsoreijonen/Downloads/audio_file.mp3")  # Replace with the actual audio file path
 print(result["text"])
