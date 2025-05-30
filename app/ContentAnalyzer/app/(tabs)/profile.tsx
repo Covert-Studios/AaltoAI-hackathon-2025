@@ -4,23 +4,23 @@ import { Ionicons } from '@expo/vector-icons'
 import { Navbar } from '../components/Navbar'
 import { useRouter } from 'expo-router'
 
-export default function AnalyzeScreen() {
+export default function ProfileScreen() {
   const router = useRouter()
 
   const handleTabPress = (tab: string) => {
-    if (tab === 'Analyze') return
+    if (tab === 'Profile') return
     if (tab === 'Feed') router.replace('/(tabs)/feed')
-    if (tab === 'Profile') router.replace('/(tabs)/profile')
+    if (tab === 'Analyze') router.replace('/(tabs)/analyze')
   }
 
   return (
     <View style={styles.container}>
       <View style={styles.content}>
-        <Ionicons name="analytics-outline" size={48} color="#0a7ea4" style={{ marginBottom: 16 }} />
-        <Text style={styles.title}>Analyze</Text>
-        <Text style={styles.subtitle}>Your content analysis tools will appear here.</Text>
+        <Ionicons name="person-outline" size={48} color="#0a7ea4" style={{ marginBottom: 16 }} />
+        <Text style={styles.title}>Profile</Text>
+        <Text style={styles.subtitle}>Your profile details will appear here.</Text>
       </View>
-      <Navbar onTabPress={handleTabPress} activeTab="Analyze" />
+      <Navbar onTabPress={handleTabPress} activeTab="Profile" />
     </View>
   )
 }

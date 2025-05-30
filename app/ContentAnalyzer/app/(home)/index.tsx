@@ -1,11 +1,37 @@
 import { SignedIn, SignedOut, useUser } from '@clerk/clerk-expo'
-import { Link } from 'expo-router'
-import { Text, View, StyleSheet, TouchableOpacity } from 'react-native'
+import { Link, useRouter } from 'expo-router'
+import { Text, View, StyleSheet, TouchableOpacity, Modal, Animated } from 'react-native'
 import { SignOutButton } from '@/app/components/SignOutButton'
 import { Ionicons } from '@expo/vector-icons'
+import React from 'react'
 
 export default function Page() {
-  const { user } = useUser()
+  const { user, isSignedIn } = useUser()
+  const router = useRouter()
+  const [showWelcome, setShowWelcome] = React.useState(false)
+  const fadeAnim = React.useRef(new Animated.Value(0)).current
+
+  // Redirect to (tabs)/feed when signed in
+  React.useEffect(() => {
+    if (isSignedIn) {
+      setShowWelcome(true)
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: true,
+      }).start()
+      setTimeout(() => {
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 400,
+          useNativeDriver: true,
+        }).start(() => {
+          setShowWelcome(false)
+          router.replace('/(tabs)/feed')
+        })
+      }, 1800)
+    }
+  }, [isSignedIn])
 
   return (
     <View style={styles.container}>
@@ -16,21 +42,6 @@ export default function Page() {
           </Text>
           <Text style={styles.subtitle}>Welcome to Content Analyzer!</Text>
           <SignOutButton />
-        </View>
-        {/* Dummy Navbar */}
-        <View style={styles.navbar}>
-          <TouchableOpacity style={styles.navItem}>
-            <Ionicons name="home-outline" size={28} color="#0a7ea4" />
-            <Text style={styles.navLabel}>Feed</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.navItem}>
-            <Ionicons name="analytics-outline" size={28} color="#888" />
-            <Text style={styles.navLabel}>Analyze</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.navItem}>
-            <Ionicons name="person-outline" size={28} color="#888" />
-            <Text style={styles.navLabel}>Profile</Text>
-          </TouchableOpacity>
         </View>
       </SignedIn>
       <SignedOut>
@@ -90,24 +101,33 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 16,
   },
-  navbar: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    paddingVertical: 14,
-    borderTopWidth: 1,
-    borderColor: '#eee',
-    elevation: 8,
-  },
-  navItem: {
-    alignItems: 'center',
+  // Welcome popup styles
+  modalOverlay: {
     flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.18)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  navLabel: {
-    fontSize: 13,
+  welcomePopup: {
+    backgroundColor: '#fff',
+    borderRadius: 18,
+    paddingVertical: 36,
+    paddingHorizontal: 36,
+    alignItems: 'center',
+    elevation: 8,
+    shadowColor: '#0a7ea4',
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+  },
+  welcomeEmoji: {
+    fontSize: 48,
+    marginBottom: 8,
+  },
+  welcomeText: {
+    fontSize: 22,
+    fontWeight: '700',
     color: '#0a7ea4',
-    marginTop: 2,
-    fontWeight: '600',
+    textAlign: 'center',
   },
 })

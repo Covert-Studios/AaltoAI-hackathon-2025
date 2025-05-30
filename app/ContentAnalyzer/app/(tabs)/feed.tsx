@@ -1,26 +1,26 @@
 import React from 'react'
 import { View, Text, StyleSheet } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
-import { Navbar } from '../components/Navbar'
+import { Navbar } from '../components/Navbar' // Adjust the path if needed
 import { useRouter } from 'expo-router'
 
-export default function AnalyzeScreen() {
+export default function FeedScreen() {
   const router = useRouter()
 
   const handleTabPress = (tab: string) => {
-    if (tab === 'Analyze') return
-    if (tab === 'Feed') router.replace('/(tabs)/feed')
+    if (tab === 'Feed') return
+    if (tab === 'Analyze') router.replace('/(tabs)/analyze')
     if (tab === 'Profile') router.replace('/(tabs)/profile')
   }
 
   return (
     <View style={styles.container}>
       <View style={styles.content}>
-        <Ionicons name="analytics-outline" size={48} color="#0a7ea4" style={{ marginBottom: 16 }} />
-        <Text style={styles.title}>Analyze</Text>
-        <Text style={styles.subtitle}>Your content analysis tools will appear here.</Text>
+        <Ionicons name="home-outline" size={48} color="#0a7ea4" style={{ marginBottom: 16 }} />
+        <Text style={styles.title}>Feed</Text>
+        <Text style={styles.subtitle}>Your personalized content feed will appear here.</Text>
       </View>
-      <Navbar onTabPress={handleTabPress} activeTab="Analyze" />
+      <Navbar onTabPress={handleTabPress} activeTab="Feed" />
     </View>
   )
 }
