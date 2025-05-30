@@ -1,13 +1,15 @@
-import openai
+import os
+import openai  # Use the correct OpenAI library
 
-# Set your API key
-openai.api_key = "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"
+# Set up the OpenAI client with the API key from the environment variable
+openai.api_key = os.environ.get("OPENAI_API_KEY")
 
-# Generate a completion
+# Generate a response
 response = openai.ChatCompletion.create(
     model="gpt-4",
     messages=[
-        {"role": "user", "content": "write a haiku about ai"}
+        {"role": "system", "content": "You are a coding assistant that talks like a pirate."},
+        {"role": "user", "content": "How do I check if a Python object is an instance of a class?"}
     ]
 )
 
