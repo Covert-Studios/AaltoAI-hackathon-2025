@@ -1,1 +1,105 @@
 .venv
+# --- Python ---
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+pip-wheel-metadata/
+*.egg-info/
+dist/
+build/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# PyInstaller
+*.spec
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre
+.pyre/
+
+# Pytype
+.pytype/
+
+# PyCharm
+.idea/
+
+# VSCode
+.vscode/
+
+# --- React Native ---
+
+# node modules
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.pnpm-store/
+
+# Metro
+.expo/
+.expo-shared/
+*.expo
+*.expo-shared
+*.expo-shared.*
+
+# iOS
+ios/Pods/
+ios/DerivedData/
+ios/*.xcodeproj/project.xcworkspace/
+ios/*.xcworkspace/xcshareddata/WorkspaceSettings.xcsettings
+ios/build/
+
+# Android
+android/.gradle/
+android/app/build/
+android/build/
+*.keystore
+*.jks
+
+# Misc
+*.DS_Store
+.env
+.env.*
+*.log
+
+# Fastlane (if used)
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output/
+
+# Bundler
+*.bundle
+
+# macOS
+*.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
