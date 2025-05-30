@@ -1,3 +1,8 @@
 shazamio
 pydub
 ffmpeg-python
+torch
+clip-by-openai
+opencv-python
+Pillow
+tqdm
