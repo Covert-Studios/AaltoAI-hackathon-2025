@@ -5,9 +5,12 @@ import { Navbar } from '../components/Navbar'
 import { useRouter } from 'expo-router'
 import { useAuth } from '@clerk/clerk-expo'
 
+// Example categories for the feed
 const CATEGORIES = ['All', 'Tech', 'Science', 'Art', 'Sports']
 
 const FEED_ITEMS = [
+  // Example feed items 
+  // other stuff will be added from the api 
   {
     id: 1,
     category: 'Tech',
@@ -40,7 +43,6 @@ const FEED_ITEMS = [
     summary: 'The finals were full of surprises and upsets.',
     details: 'Fans witnessed an intense battle as underdogs took the lead and secured a historic victory.',
   },
-  // Add more items as needed
 ]
 
 export default function FeedScreen() {

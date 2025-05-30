@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Text, TextInput, TouchableOpacity, View, StyleSheet, Modal, Animated } from 'react-native'
+import { Text, TextInput, TouchableOpacity, View, StyleSheet, Modal, Animated, ActivityIndicator } from 'react-native' // <-- add ActivityIndicator
 import { useSignUp } from '@clerk/clerk-expo'
 import { Link, useRouter } from 'expo-router'
 import { HeaderTitle } from '@react-navigation/elements'
@@ -16,8 +16,11 @@ export default function SignUpScreen() {
   const [showError, setShowError] = React.useState(false)
   const fadeAnim = React.useRef(new Animated.Value(0)).current
 
+  const [loading, setLoading] = React.useState(false)
+
   const onSignUpPress = async () => {
     if (!isLoaded) return
+    setLoading(true)
     try {
       await signUp.create({
         emailAddress,
@@ -40,11 +43,14 @@ export default function SignUpScreen() {
         useNativeDriver: true,
       }).start()
       console.error(JSON.stringify(err, null, 2))
+    } finally {
+      setLoading(false)
     }
   }
 
   const onVerifyPress = async () => {
     if (!isLoaded) return
+    setLoading(true)
     try {
       const signUpAttempt = await signUp.attemptEmailAddressVerification({
         code,
@@ -77,6 +83,8 @@ export default function SignUpScreen() {
         useNativeDriver: true,
       }).start()
       console.error(JSON.stringify(err, null, 2))
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -89,6 +97,15 @@ export default function SignUpScreen() {
       setShowError(false)
       setError(null)
     })
+  }
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color="#3a86ff" />
+        <Text style={{ marginTop: 18, color: '#3a86ff', fontSize: 18 }}>Please wait...</Text>
+      </View>
+    )
   }
 
   if (pendingVerification) {

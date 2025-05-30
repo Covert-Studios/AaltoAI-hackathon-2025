@@ -1,6 +1,6 @@
 import { SignedIn, SignedOut, useUser } from '@clerk/clerk-expo'
 import { Link, useRouter } from 'expo-router'
-import { Text, View, StyleSheet, Animated } from 'react-native'
+import { Text, View, StyleSheet, Animated, ActivityIndicator } from 'react-native'
 import { SignOutButton } from '@/app/components/SignOutButton'
 import React from 'react'
 
@@ -21,6 +21,7 @@ export default function Page() {
   if (isSignedIn === undefined) {
     return (
       <View style={styles.container}>
+        <ActivityIndicator size="large" color="#0a7ea4" />
         <Text>Loading...</Text>
       </View>
     )
