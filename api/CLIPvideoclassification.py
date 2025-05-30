@@ -50,7 +50,7 @@ def analyze_frames(frame_dir, model, preprocess, text_features, topics, device):
 # Main function
 if __name__ == "__main__":
     # Step 1: Load topics
-    topics_file = "topics.txt"  # Path to your topics.txt file
+    topics_file = "data/topics.txt"  # Updated relative path to topics.txt
     topics = load_topics(topics_file)
     print(f"Loaded {len(topics)} topics:")
     for topic in topics:
