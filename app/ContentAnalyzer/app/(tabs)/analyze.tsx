@@ -30,7 +30,6 @@ export default function AnalyzeScreen() {
       <View style={styles.content}>
         <Ionicons name="analytics-outline" size={48} color="#0a7ea4" style={{ marginBottom: 16 }} />
         <Text style={styles.title}>Analyze</Text>
-        <Text style={styles.subtitle}>Your content analysis tools will appear here.</Text>
       </View>
       <Navbar onTabPress={handleTabPress} activeTab="Analyze" />
     </View>
