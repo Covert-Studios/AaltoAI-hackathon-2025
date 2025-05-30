@@ -1,14 +1,18 @@
+from dotenv import load_dotenv
 import os
-import openai  # Use the correct OpenAI library
+import openai
 
-# Set up the OpenAI client with the API key from the environment variable
-openai.api_key = os.environ.get("OPENAI_API_KEY")
+# Load environment variables from .env file
+load_dotenv()
+
+# Set up the OpenAI client with the API key
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 # Generate a response
 response = openai.ChatCompletion.create(
-    model="gpt-4",
+    model="gpt-3.5-turbo",  # Use gpt-3.5-turbo instead of gpt-4
     messages=[
-        {"role": "system", "content": "You are a coding assistant that talks like a pirate."},
+        {"role": "system", "content": "You are a helpful assistant."},
         {"role": "user", "content": "How do I check if a Python object is an instance of a class?"}
     ]
 )
