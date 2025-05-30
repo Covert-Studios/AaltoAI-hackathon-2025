@@ -39,33 +39,50 @@ export default function AnalyzeScreen() {
       mediaTypes: ImagePicker.MediaTypeOptions.Videos,
       allowsEditing: false,
       quality: 1,
-    })
+    });
 
     if (!result.canceled && result.assets && result.assets.length > 0) {
-      setLoading(true)
+      setLoading(true);
       try {
         // Upload video to API
-        const videoUri = result.assets[0].uri
-        // TODO: Replace with your API upload logic
-        // Example:
-        // const formData = new FormData()
-        // formData.append('video', { uri: videoUri, name: 'video.mp4', type: 'video/mp4' })
-        // const res = await fetch('https://your-api/analyze', { method: 'POST', body: formData })
-        // const data = await res.json()
-        // For now, just mock:
-        const data = {
+        const videoUri = result.assets[0].uri;
+        const formData = new FormData();
+        formData.append("video", {
+          uri: videoUri,
+          name: "uploaded_video.mp4",
+          type: "video/mp4",
+        });
+
+        const response = await fetch("http://<your-server-ip>:5000/upload", {
+          method: "POST",
+          headers: {
+            "Content-Type": "multipart/form-data",
+            "x-api-key": "prohackerschmacker6969",
+          },
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to upload video");
+        }
+
+        const data = await response.json();
+        console.log("Upload successful:", data);
+
+        // Add to history
+        const historyData = {
           id: String(Date.now()),
           title: `Analysis ${history.length + 1}`,
           date: new Date().toISOString().slice(0, 10),
-        }
-        setHistory([data, ...history])
-        router.push({ pathname: '/(tabs)/analyzeDetail', params: { id: data.id } })
+        };
+        setHistory([historyData, ...history]);
+        router.push({ pathname: "/(tabs)/analyzeDetail", params: { id: historyData.id } });
       } catch (e) {
-        Alert.alert('Error', 'Failed to upload video.')
+        Alert.alert("Error", "Failed to upload video.");
       }
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleHistoryPress = (item: { id: string }) => {
     router.push({ pathname: '/(tabs)/analyzeDetail', params: { id: item.id } })
