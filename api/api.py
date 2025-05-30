@@ -1,24 +1,41 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request, abort
 import subprocess
 
 app = Flask(__name__)
 
+# Predefined API key
+API_KEY = "prohackerschmacker6969"
+
+# Decorator to require API key
+def require_api_key(func):
+    def wrapper(*args, **kwargs):
+        api_key = request.headers.get('x-api-key')
+        if api_key != API_KEY:
+            abort(401, description="Unauthorized: Invalid API Key")
+        return func(*args, **kwargs)
+    wrapper.__name__ = func.__name__  # Preserve function name for Flask
+    return wrapper
+
 @app.route('/date', methods=['GET'])
+@require_api_key
 def get_date():
     result = subprocess.check_output(['date']).decode('utf-8')
     return jsonify({'date': result.strip()})
 
 @app.route('/cal', methods=['GET'])
+@require_api_key
 def get_cal():
     result = subprocess.check_output(['cal']).decode('utf-8')
     return jsonify({'calendar': result.strip()})
 
 @app.route('/docker', methods=['GET'])
+@require_api_key
 def get_docker():
     result = subprocess.check_output(['docker', 'ps']).decode('utf-8')
     return jsonify({'docker': result.strip()})
 
 @app.route('/cls', methods=['GET'])
+@require_api_key
 def get_cls():
     result = subprocess.check_output(['cls']).decode('utf-8')
     return jsonify({'cls': result.strip()})
