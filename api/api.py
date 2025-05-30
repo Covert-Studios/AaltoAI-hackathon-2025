@@ -16,6 +16,10 @@ def require_api_key(func):
     wrapper.__name__ = func.__name__  # Preserve function name for Flask
     return wrapper
 
+def get_video(video):
+    # get the users video 
+
+
 @app.route('/date', methods=['GET'])
 @require_api_key
 def get_date():
