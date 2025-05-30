@@ -2,6 +2,7 @@ import { useSignIn } from '@clerk/clerk-expo'
 import { Link, useRouter } from 'expo-router'
 import { Text, TextInput, TouchableOpacity, View, StyleSheet, Modal, Animated } from 'react-native'
 import React from 'react'
+import { HeaderTitle } from '@react-navigation/elements'
 
 export default function Page() {
   const { signIn, setActive, isLoaded } = useSignIn()
@@ -81,6 +82,10 @@ export default function Page() {
           </Animated.View>
         </View>
       </Modal>
+      <HeaderTitle>Sign In</HeaderTitle>
+      <Text style={{ color: '#444', fontSize: 16, marginBottom: 24 }}>
+        Please enter your email and password to sign in to your account.
+      </Text>
       <TextInput
         autoCapitalize="none"
         value={emailAddress}

@@ -2,6 +2,7 @@ import * as React from 'react'
 import { Text, TextInput, TouchableOpacity, View, StyleSheet, Modal, Animated } from 'react-native'
 import { useSignUp } from '@clerk/clerk-expo'
 import { Link, useRouter } from 'expo-router'
+import { HeaderTitle } from '@react-navigation/elements'
 
 export default function SignUpScreen() {
   const { isLoaded, signUp, setActive } = useSignUp()
@@ -138,7 +139,10 @@ export default function SignUpScreen() {
           </Animated.View>
         </View>
       </Modal>
-      <Text style={styles.title}>Sign up</Text>
+      <HeaderTitle>Sign Up</HeaderTitle>
+      <Text style={{ color: '#444', fontSize: 16, marginBottom: 24 }}>
+        Please enter your email and password to create a new account.
+      </Text>
       <TextInput
         autoCapitalize="none"
         value={emailAddress}

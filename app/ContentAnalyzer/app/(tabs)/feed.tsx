@@ -1,16 +1,28 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { View, Text, StyleSheet } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
-import { Navbar } from '../components/Navbar' // Adjust the path if needed
+import { Navbar } from '../components/Navbar'
 import { useRouter } from 'expo-router'
+import { useAuth } from '@clerk/clerk-expo'
 
 export default function FeedScreen() {
   const router = useRouter()
+  const { isSignedIn, isLoaded } = useAuth()
+
+  useEffect(() => {
+    if (isLoaded && !isSignedIn) {
+      router.replace('/')
+    }
+  }, [isSignedIn, isLoaded, router])
 
   const handleTabPress = (tab: string) => {
     if (tab === 'Feed') return
     if (tab === 'Analyze') router.replace('/(tabs)/analyze')
     if (tab === 'Profile') router.replace('/(tabs)/profile')
+  }
+
+  if (!isLoaded || !isSignedIn) {
+    return null
   }
 
   return (

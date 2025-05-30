@@ -1,8 +1,7 @@
 import { SignedIn, SignedOut, useUser } from '@clerk/clerk-expo'
 import { Link, useRouter } from 'expo-router'
-import { Text, View, StyleSheet, TouchableOpacity, Modal, Animated } from 'react-native'
+import { Text, View, StyleSheet, Animated } from 'react-native'
 import { SignOutButton } from '@/app/components/SignOutButton'
-import { Ionicons } from '@expo/vector-icons'
 import React from 'react'
 
 export default function Page() {
@@ -11,7 +10,6 @@ export default function Page() {
   const [showWelcome, setShowWelcome] = React.useState(false)
   const fadeAnim = React.useRef(new Animated.Value(0)).current
 
-  // Redirect to (tabs)/feed when signed in
   React.useEffect(() => {
     if (isSignedIn) {
       setShowWelcome(true)
@@ -101,7 +99,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 16,
   },
-  // Welcome popup styles
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.18)',
@@ -128,6 +125,6 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '700',
     color: '#0a7ea4',
-    textAlign: 'center',
+    textAlign: 'center',s
   },
 })
