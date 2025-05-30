@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Text, TextInput, TouchableOpacity, View, StyleSheet } from 'react-native'
+import { Text, TextInput, TouchableOpacity, View, StyleSheet, Modal, Animated } from 'react-native'
 import { useSignUp } from '@clerk/clerk-expo'
 import { Link, useRouter } from 'expo-router'
 
@@ -11,6 +11,9 @@ export default function SignUpScreen() {
   const [password, setPassword] = React.useState('')
   const [pendingVerification, setPendingVerification] = React.useState(false)
   const [code, setCode] = React.useState('')
+  const [error, setError] = React.useState<string | null>(null)
+  const [showError, setShowError] = React.useState(false)
+  const fadeAnim = React.useRef(new Animated.Value(0)).current
 
   const onSignUpPress = async () => {
     if (!isLoaded) return
@@ -21,7 +24,20 @@ export default function SignUpScreen() {
       })
       await signUp.prepareEmailAddressVerification({ strategy: 'email_code' })
       setPendingVerification(true)
-    } catch (err) {
+    } catch (err: any) {
+      let message = 'Unknown error'
+      if (err && err.errors && err.errors[0] && err.errors[0].message) {
+        message = err.errors[0].message
+      } else if (err && err.message) {
+        message = err.message
+      }
+      setError(message)
+      setShowError(true)
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start()
       console.error(JSON.stringify(err, null, 2))
     }
   }
@@ -36,16 +52,59 @@ export default function SignUpScreen() {
         await setActive({ session: signUpAttempt.createdSessionId })
         router.replace('/')
       } else {
+        setError('Verification not complete. Please check your code.')
+        setShowError(true)
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }).start()
         console.error(JSON.stringify(signUpAttempt, null, 2))
       }
-    } catch (err) {
+    } catch (err: any) {
+      let message = 'Unknown error'
+      if (err && err.errors && err.errors[0] && err.errors[0].message) {
+        message = err.errors[0].message
+      } else if (err && err.message) {
+        message = err.message
+      }
+      setError(message)
+      setShowError(true)
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start()
       console.error(JSON.stringify(err, null, 2))
     }
+  }
+
+  const handleCloseError = () => {
+    Animated.timing(fadeAnim, {
+      toValue: 0,
+      duration: 200,
+      useNativeDriver: true,
+    }).start(() => {
+      setShowError(false)
+      setError(null)
+    })
   }
 
   if (pendingVerification) {
     return (
       <View style={styles.container}>
+        {/* Error Popup */}
+        <Modal visible={showError} transparent animationType="none">
+          <View style={styles.modalOverlay}>
+            <Animated.View style={[styles.errorPopup, { opacity: fadeAnim }]}>
+              <Text style={styles.errorTitle}>Verification Error</Text>
+              <Text style={styles.errorMessage}>{error}</Text>
+              <TouchableOpacity style={styles.errorButton} onPress={handleCloseError}>
+                <Text style={styles.errorButtonText}>Close</Text>
+              </TouchableOpacity>
+            </Animated.View>
+          </View>
+        </Modal>
         <Text style={styles.title}>Verify your email</Text>
         <Text style={styles.subtitle}>
           Enter the verification code sent to your email.
@@ -67,6 +126,18 @@ export default function SignUpScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Error Popup */}
+      <Modal visible={showError} transparent animationType="none">
+        <View style={styles.modalOverlay}>
+          <Animated.View style={[styles.errorPopup, { opacity: fadeAnim }]}>
+            <Text style={styles.errorTitle}>Sign Up Error</Text>
+            <Text style={styles.errorMessage}>{error}</Text>
+            <TouchableOpacity style={styles.errorButton} onPress={handleCloseError}>
+              <Text style={styles.errorButtonText}>Close</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </View>
+      </Modal>
       <Text style={styles.title}>Sign up</Text>
       <TextInput
         autoCapitalize="none"
@@ -162,5 +233,50 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 15,
     marginLeft: 4,
+  },
+  // Error popup styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.18)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorPopup: {
+    backgroundColor: '#fff',
+    borderRadius: 18,
+    paddingVertical: 28,
+    paddingHorizontal: 28,
+    alignItems: 'center',
+    elevation: 8,
+    shadowColor: '#ff3a3a',
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    minWidth: 260,
+    maxWidth: 320,
+  },
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#ff3a3a',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  errorMessage: {
+    fontSize: 16,
+    color: '#444',
+    marginBottom: 18,
+    textAlign: 'center',
+  },
+  errorButton: {
+    backgroundColor: '#ff3a3a',
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 24,
+  },
+  errorButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 16,
   },
 })

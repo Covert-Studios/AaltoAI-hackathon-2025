@@ -1,6 +1,6 @@
 import { useSignIn } from '@clerk/clerk-expo'
 import { Link, useRouter } from 'expo-router'
-import { Text, TextInput, TouchableOpacity, View, StyleSheet } from 'react-native'
+import { Text, TextInput, TouchableOpacity, View, StyleSheet, Modal, Animated } from 'react-native'
 import React from 'react'
 
 export default function Page() {
@@ -9,38 +9,78 @@ export default function Page() {
 
   const [emailAddress, setEmailAddress] = React.useState('')
   const [password, setPassword] = React.useState('')
+  const [error, setError] = React.useState<string | null>(null)
+  const [showError, setShowError] = React.useState(false)
+  const fadeAnim = React.useRef(new Animated.Value(0)).current
 
   // Handle the submission of the sign-in form
   const onSignInPress = async () => {
     if (!isLoaded) return
 
-    // Start the sign-in process using the email and password provided
     try {
       const signInAttempt = await signIn.create({
         identifier: emailAddress,
         password,
       })
 
-      // If sign-in process is complete, set the created session as active
-      // and redirect the user
       if (signInAttempt.status === 'complete') {
         await setActive({ session: signInAttempt.createdSessionId })
         router.replace('/')
       } else {
-        // If the status isn't complete, check why. User might need to
-        // complete further steps.
+        // Show error if status isn't complete
+        setError('Sign-in not complete. Please check your credentials or complete any required steps.')
+        setShowError(true)
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }).start()
         console.error(JSON.stringify(signInAttempt, null, 2))
       }
-    } catch (err) {
-      // See https://clerk.com/docs/custom-flows/error-handling
-      // for more info on error handling
+    } catch (err: any) {
+      // Show error popup with Clerk error message
+      let message = 'Unknown error'
+      if (err && err.errors && err.errors[0] && err.errors[0].message) {
+        message = err.errors[0].message
+      } else if (err && err.message) {
+        message = err.message
+      }
+      setError(message)
+      setShowError(true)
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start()
       console.error(JSON.stringify(err, null, 2))
     }
   }
 
+  const handleCloseError = () => {
+    Animated.timing(fadeAnim, {
+      toValue: 0,
+      duration: 200,
+      useNativeDriver: true,
+    }).start(() => {
+      setShowError(false)
+      setError(null)
+    })
+  }
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Sign in</Text>
+      {/* Error Popup */}
+      <Modal visible={showError} transparent animationType="none">
+        <View style={styles.modalOverlay}>
+          <Animated.View style={[styles.errorPopup, { opacity: fadeAnim }]}>
+            <Text style={styles.errorTitle}>Sign In Error</Text>
+            <Text style={styles.errorMessage}>{error}</Text>
+            <TouchableOpacity style={styles.errorButton} onPress={handleCloseError}>
+              <Text style={styles.errorButtonText}>Close</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </View>
+      </Modal>
       <TextInput
         autoCapitalize="none"
         value={emailAddress}
@@ -79,13 +119,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 28,
     backgroundColor: '#f8f9fa',
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: '700',
-    marginBottom: 32,
-    color: '#22223b',
-    alignSelf: 'center',
   },
   input: {
     backgroundColor: '#fff',
@@ -129,5 +162,50 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 15,
     marginLeft: 4,
+  },
+  // Error popup styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.18)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorPopup: {
+    backgroundColor: '#fff',
+    borderRadius: 18,
+    paddingVertical: 28,
+    paddingHorizontal: 28,
+    alignItems: 'center',
+    elevation: 8,
+    shadowColor: '#ff3a3a',
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    minWidth: 260,
+    maxWidth: 320,
+  },
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#ff3a3a',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  errorMessage: {
+    fontSize: 16,
+    color: '#444',
+    marginBottom: 18,
+    textAlign: 'center',
+  },
+  errorButton: {
+    backgroundColor: '#ff3a3a',
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 24,
+  },
+  errorButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 16,
   },
 })
