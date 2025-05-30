@@ -12,49 +12,21 @@ export default function Page() {
 
   React.useEffect(() => {
     if (isSignedIn) {
-      setShowWelcome(true)
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 400,
-        useNativeDriver: true,
-      }).start()
-      setTimeout(() => {
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 400,
-          useNativeDriver: true,
-        }).start(() => {
-          setShowWelcome(false)
-          router.replace('/(tabs)/feed')
-        })
-      }, 1800)
+      router.replace('/(tabs)/feed')
+    } else if (isSignedIn === false) {
+      router.replace('/(auth)/sign-in')
     }
-  }, [isSignedIn])
+  }, [isSignedIn, router])
 
-  return (
-    <View style={styles.container}>
-      <SignedIn>
-        <View style={styles.tabContent}>
-          <Text style={styles.greeting}>
-            👋 Hello, {user?.emailAddresses[0].emailAddress}
-          </Text>
-          <Text style={styles.subtitle}>Welcome to Content Analyzer!</Text>
-          <SignOutButton />
-        </View>
-      </SignedIn>
-      <SignedOut>
-        <View style={styles.signedOut}>
-          <Text style={styles.signedOutText}>You are not signed in.</Text>
-          <Link href="../(auth)/sign-in" style={styles.link}>
-            <Text style={styles.linkText}>Sign in</Text>
-          </Link>
-          <Link href="../(auth)/sign-up" style={styles.link}>
-            <Text style={styles.linkText}>Sign up</Text>
-          </Link>
-        </View>
-      </SignedOut>
-    </View>
-  )
+  if (isSignedIn === undefined) {
+    return (
+      <View style={styles.container}>
+        <Text>Loading...</Text>
+      </View>
+    )
+  }
+
+  return null
 }
 
 const styles = StyleSheet.create({
