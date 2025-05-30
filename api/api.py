@@ -1,9 +1,6 @@
 from flask import Flask, jsonify, request, abort
 import subprocess
 import os
-from collections import Counter
-import torch
-import clip
 
 app = Flask(__name__)
 
@@ -63,44 +60,6 @@ def upload_video():
     video.save(video_path)
 
     return jsonify({"message": "Video uploaded successfully", "path": video_path}), 200
-
-@app.route('/analyze', methods=['POST'])
-@require_api_key
-def analyze_video():
-    if 'video' not in request.files:
-        return jsonify({"error": "No video file provided"}), 400
-
-    video = request.files['video']
-    if video.filename == '':
-        return jsonify({"error": "No selected file"}), 400
-
-    # Save the uploaded video
-    video_path = os.path.join("uploads", video.filename)
-    os.makedirs("uploads", exist_ok=True)
-    video.save(video_path)
-
-    # Call the CLIP classification script
-    frame_dir = "frames"
-    os.makedirs(frame_dir, exist_ok=True)
-    extract_frames(video_path, frame_dir, frame_interval=2)
-
-    # Load topics and analyze frames
-    topics_file = "data/topics.txt"
-    topics = load_topics(topics_file)
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    model, preprocess = clip.load("ViT-B/32", device=device)
-    text_tokens = clip.tokenize(topics).to(device)
-    with torch.no_grad():
-        text_features = model.encode_text(text_tokens)
-        text_features /= text_features.norm(dim=-1, keepdim=True)
-
-    results = analyze_frames(frame_dir, model, preprocess, text_features, topics, device)
-
-    # Summarize results
-    topics_detected = [topic for _, topic in results]
-    summary = Counter(topics_detected).most_common()
-
-    return jsonify({"summary": summary})
 
 if __name__ == '__main__':
     app.run(debug=True)
