@@ -1,6 +1,6 @@
 import { useSignIn } from '@clerk/clerk-expo'
 import { Link, useRouter } from 'expo-router'
-import { Text, TextInput, TouchableOpacity, View } from 'react-native'
+import { Text, TextInput, TouchableOpacity, View, StyleSheet } from 'react-native'
 import React from 'react'
 
 export default function Page() {
@@ -39,28 +39,95 @@ export default function Page() {
   }
 
   return (
-    <View>
-      <Text>Sign in</Text>
+    <View style={styles.container}>
+      <Text style={styles.title}>Sign in</Text>
       <TextInput
         autoCapitalize="none"
         value={emailAddress}
-        placeholder="Enter email"
-        onChangeText={(emailAddress) => setEmailAddress(emailAddress)}
+        placeholder="Email"
+        placeholderTextColor="#888"
+        onChangeText={setEmailAddress}
+        style={styles.input}
+        keyboardType="email-address"
       />
       <TextInput
         value={password}
-        placeholder="Enter password"
-        secureTextEntry={true}
-        onChangeText={(password) => setPassword(password)}
+        placeholder="Password"
+        placeholderTextColor="#888"
+        secureTextEntry
+        onChangeText={setPassword}
+        style={styles.input}
       />
-      <TouchableOpacity onPress={onSignInPress}>
-        <Text>Continue</Text>
+      <TouchableOpacity style={styles.button} onPress={onSignInPress}>
+        <Text style={styles.buttonText}>Continue</Text>
       </TouchableOpacity>
-      <View style={{ display: 'flex', flexDirection: 'row', gap: 3 }}>
-        <Link href="./sign-up">
-          <Text>Sign up</Text>
+      <View style={styles.footer}>
+        <Text style={styles.footerText}>Don&apos;t have an account?</Text>
+        <Link href="./sign-up" asChild>
+          <TouchableOpacity>
+            <Text style={styles.linkText}>Sign up</Text>
+          </TouchableOpacity>
         </Link>
       </View>
     </View>
   )
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: 28,
+    backgroundColor: '#f8f9fa',
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: '700',
+    marginBottom: 32,
+    color: '#22223b',
+    alignSelf: 'center',
+  },
+  input: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 10,
+    fontSize: 16,
+    marginBottom: 18,
+    borderWidth: 1,
+    borderColor: '#e0e1dd',
+  },
+  button: {
+    backgroundColor: '#3a86ff',
+    paddingVertical: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginTop: 8,
+    marginBottom: 18,
+    shadowColor: '#3a86ff',
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  buttonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 18,
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  footerText: {
+    color: '#444',
+    fontSize: 15,
+  },
+  linkText: {
+    color: '#3a86ff',
+    fontWeight: '600',
+    fontSize: 15,
+    marginLeft: 4,
+  },
+})
