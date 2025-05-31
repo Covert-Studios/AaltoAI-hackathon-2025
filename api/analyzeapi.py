@@ -2,8 +2,6 @@ from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Request
 import uuid
 import datetime
 import os
-import shazamioapi
-import whisperstuff
 import torch
 from torchvision import transforms
 from PIL import Image
