@@ -5,6 +5,7 @@ import { Navbar } from '../components/Navbar'
 import { useRouter } from 'expo-router'
 import { useAuth } from '@clerk/clerk-expo'
 import * as ImagePicker from 'expo-image-picker'
+import * as FileSystem from 'expo-file-system'
 
 const API_BASE_URL = 'http://127.0.0.1:8000'
 
@@ -57,24 +58,39 @@ export default function AnalyzeScreen() {
     if (!result.canceled && result.assets && result.assets.length > 0) {
       setLoading(true)
       try {
-        const videoUri = result.assets[0].uri
-        const formData = new FormData()
-        formData.append('video', {
-          uri: videoUri,
-          name: 'video.mp4',
-          type: 'video/mp4',
-        } as any)
+        const videoAsset = result.assets[0]
+        let fileUri = videoAsset.uri
+        console.log('Picked video asset:', videoAsset)
 
-        const res = await fetch(`${API_BASE_URL}/analyze`, {
+        const formData = new FormData()
+
+        if (fileUri.startsWith('data:')) {
+          const res = await fetch(fileUri)
+          const blob = await res.blob()
+          formData.append('video', blob, videoAsset.fileName || 'video.mp4')
+        } else {
+          formData.append('video', {
+            uri: fileUri,
+            name: videoAsset.fileName || 'video.mp4',
+            type: videoAsset.mimeType || 'video/mp4',
+          } as any)
+        }
+
+        const uploadRes = await fetch(`${API_BASE_URL}/analyze`, {
           method: 'POST',
           body: formData,
         })
 
-        if (!res.ok) throw new Error('Failed to upload video')
-        const data = await res.json()
+        if (!uploadRes.ok) {
+          const errText = await uploadRes.text()
+          console.error('Upload failed:', errText)
+          throw new Error('Failed to upload video')
+        }
+        const data = await uploadRes.json()
         setHistory([data, ...history])
         router.push({ pathname: '/(tabs)/analyzeDetail', params: { id: data.id } })
       } catch (e) {
+        console.error('Upload error:', e)
         Alert.alert('Error', 'Failed to upload video.')
       }
       setLoading(false)
