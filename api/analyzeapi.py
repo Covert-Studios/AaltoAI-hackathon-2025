@@ -47,7 +47,7 @@ def get_analyze_detail_endpoint(analysis_id: str, user_id: str = Depends(get_cur
 async def analyze_video(
     video: UploadFile = File(...),
     user_id: str = Depends(get_current_user_id),
-    frame_interval: int = 30
+    frame_interval: int = 30  # Allow frame interval to be configurable
 ):
     temp_dir = tempfile.gettempdir()
     temp_video_path = os.path.join(temp_dir, f"{uuid.uuid4()}.mp4")
@@ -69,14 +69,14 @@ async def analyze_video(
         frame_results = []
         for i, frame in enumerate(frames):
             logging.debug(f"Processing frame {i + 1}/{len(frames)}.")
-            image = preprocess(frame).unsqueeze(0).to(device)
+            image = preprocess(frame).unsqueeze(0).to(device)  # Preprocess and add batch dimension
             with torch.no_grad():
                 image_features = clip_model.encode_image(image)
-            frame_results.append(image_features.cpu().numpy().tolist())
+            frame_results.append(image_features.cpu().numpy().tolist())  # Convert to list for JSON serialization
 
         # Extract audio from the video
         logging.info("Extracting audio from the video.")
-        ffmpeg.input(temp_video_path).output(temp_audio_path).run(overwrite_output=True, quiet=True)
+        ffmpeg.input(temp_video_path).output(temp_audio_path).run(overwrite_output=True)
         logging.info(f"Audio extracted to {temp_audio_path}.")
 
         # Transcribe audio with Whisper
@@ -86,47 +86,31 @@ async def analyze_video(
         transcription = transcription_result.get("text", "")
         logging.info("Audio transcription completed.")
 
-        # Recognize music with Shazamio (use recognize, not recognize_song)
+        # Recognize music with Shazamio
         logging.info("Recognizing music with Shazamio.")
         shazam = Shazam()
-        shazam_result = await shazam.recognize(temp_audio_path)
+        shazam_result = await shazam.recognize_song(temp_audio_path)
         music_info = shazam_result.get("track", {})
         logging.info("Music recognition completed.")
 
-        # Generate ChatGPT response using openai>=1.0.0 API
+        # Generate ChatGPT response
         logging.info("Generating ChatGPT response.")
         chatgpt_prompt = f"Analyze the following transcription and music info:\n\nTranscription: {transcription}\n\nMusic Info: {music_info}"
-        chat_response = openai.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "You are an expert video and music analyst."},
-                {"role": "user", "content": chatgpt_prompt}
-            ],
+        logging.info(f"ChatGPT Prompt: {chatgpt_prompt}")  # Log the prompt in the terminal
+        chatgpt_response = openai.Completion.create(
+            engine="text-davinci-003",
+            prompt=chatgpt_prompt,
             max_tokens=500
         )
-        chatgpt_text = chat_response.choices[0].message.content.strip()
+        chatgpt_text = chatgpt_response.choices[0].text.strip()
         logging.info("ChatGPT response generated.")
-        logging.info(f"ChatGPT Response: {chatgpt_text}")
+        logging.info(f"ChatGPT Response: {chatgpt_text}")  # Log ChatGPT response to the terminal
 
         # Get the current date and time
         current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        today = datetime.today().date().isoformat()
-        result = f"ChatGPT's shit: {chatgpt_text}"
-
-        # Save analysis to DB
-        new_id = str(uuid.uuid4())
-        try:
-            insert_analysis(new_id, user_id, f"Analysis {today}", today, result, video.filename)
-        except Exception as e:
-            logging.error(f"Error occurred during DB insert: {str(e)}")
 
         # Return structured results
         return {
-            "id": new_id,
-            "title": f"Analysis {today}",
-            "date": today,
-            "result": result,
-            "video_filename": video.filename,
             "date_time": current_datetime,
             "frames": {"features": frame_results, "frame_count": len(frames)},
             "transcription": transcription,
