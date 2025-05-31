@@ -12,24 +12,16 @@ import openai
 
 from analyze_db import insert_analysis, get_analyses_for_user, get_analysis_detail
 from clerk_auth import get_current_user_id
-from my_clip_model import MyCLIPModel  # Import your model class
+import clip  # Import CLIP library
 
 router = APIRouter()
 
-# Load the fine-tuned CLIP model globally
-clip_model_path = "../fine_tuned_clip.pth"
+# Load the CLIP model and preprocessing pipeline
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-clip_model = MyCLIPModel()  # Instantiate the model
-clip_model.load_state_dict(torch.load(clip_model_path, map_location=device))
+clip_model, preprocess = clip.load("ViT-B/32", device=device)  # Load the model architecture and preprocessing
+clip_model.load_state_dict(torch.load("../fine_tuned_clip.pth", map_location=device))  # Load your fine-tuned weights
 clip_model.to(device)
 clip_model.eval()
-
-# Define preprocessing for CLIP
-preprocess = transforms.Compose([
-    transforms.Resize((224, 224)),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
-])
 
 # Load OpenAI API key from environment variables
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -50,79 +42,31 @@ async def analyze_video(
     video: UploadFile = File(...),
     user_id: str = Depends(get_current_user_id)
 ):
-    # Save the uploaded video to a temporary file
-    video_path = f"temp/{uuid.uuid4()}_{video.filename}"
-    os.makedirs("temp", exist_ok=True)
-    with open(video_path, "wb") as f:
-        f.write(await video.read())
-
     try:
-        # Analyze the audio using Shazam
-        shazam_result = await shazamioapi.recognize_audio_from_video(video_path)
-
-        # Analyze the audio using Whisper
-        whisper_result = whisperstuff.whisper_transcribe(video_path)
-
-        # Extract frames from the video
-        frames = extract_frames(video_path)
-
-        # Analyze frames using the fine-tuned CLIP model
-        clip_results = []
-        for frame in frames:
-            image = preprocess(frame).unsqueeze(0).to(device)
-            with torch.no_grad():
-                clip_output = clip_model(image)
-            clip_results.append(clip_output.cpu().numpy().tolist())
-
-        # Combine results
-        result = {
-            "shazam": shazam_result,
-            "whisper": whisper_result,
-            "clip": clip_results,
-        }
-
-        # Query ChatGPT for virality prediction and content suggestions
-        chatgpt_prompt = f"""
-        Based on the following data:
-        - Song: {shazam_result.get('track', 'Unknown')} by {shazam_result.get('artist', 'Unknown')}
-        - Transcription: {whisper_result}
-        - Video Classification: {clip_results}
-
-        1. Predict the virality of this content and explain why.
-        2. Suggest trending content ideas that align with current popular topics.
-        """
-        chatgpt_response = openai.ChatCompletion.create(
-            model="gpt-4",
-            messages=[
-                {"role": "system", "content": "You are a content analysis expert."},
-                {"role": "user", "content": chatgpt_prompt}
-            ]
-        )
-        chatgpt_result = chatgpt_response['choices'][0]['message']['content']
-
-        # Add ChatGPT results to the final result
-        result["chatgpt"] = chatgpt_result
-
+        # Save the uploaded video
+        temp_video_path = f"/tmp/{uuid.uuid4()}.mp4"
+        with open(temp_video_path, "wb") as f:
+            f.write(await video.read())
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error analyzing video: {str(e)}")
-    finally:
-        # Clean up the temporary file
-        os.remove(video_path)
+        raise HTTPException(status_code=500, detail=f"Failed to save video: {str(e)}")
 
-    # Insert the analysis into the database
-    today = datetime.date.today().isoformat()
-    new_id = str(uuid.uuid4())
-    insert_analysis(new_id, user_id, f"Analysis {today}", today, result, video.filename)
+    # Extract frames from the video (you already have an `extract_frames` function)
+    frames = extract_frames(temp_video_path)
 
-    # Return the full result, including ChatGPT output
-    return {
-        "id": new_id,
-        "title": f"Analysis {today}",
-        "date": today,
-        "result": result,
-        "video_filename": video.filename,
-        "chatgpt_result": chatgpt_result  # Include ChatGPT result directly in the response
-    }
+    # Process frames with CLIP
+    results = []
+    batch_size = 16
+    for i in range(0, len(frames), batch_size):
+        batch = frames[i:i + batch_size]
+        images = torch.stack([preprocess(frame) for frame in batch]).to(device)
+        with torch.no_grad():
+            image_features = clip_model.encode_image(images)
+        results.extend(image_features.cpu().numpy())
+
+    # Clean up the temporary file
+    os.remove(temp_video_path)
+
+    return {"features": results}
 
 def extract_frames(video_path, frame_interval=30):
     """
