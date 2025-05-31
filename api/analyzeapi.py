@@ -2,6 +2,8 @@ from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Request
 import uuid
 import datetime
 import os
+import shazamioapi
+import whisperstuff
 
 from analyze_db import insert_analysis, get_analyses_for_user, get_analysis_detail
 from clerk_auth import get_current_user_id
@@ -23,17 +25,16 @@ def get_analyze_detail_endpoint(analysis_id: str, user_id: str = Depends(get_cur
 async def analyze_video(
     video: UploadFile = File(...),
     user_id: str = Depends(get_current_user_id)
-):
-    # Save the uploaded video to disk
-    save_dir = "videos"
-    os.makedirs(save_dir, exist_ok=True)
-    file_location = os.path.join(save_dir, video.filename)
-    with open(file_location, "wb") as buffer:
-        buffer.write(await video.read())
 
-    new_id = str(uuid.uuid4())
-    today = datetime.date.today().isoformat()
-    result = f"Saved uploaded video as: {file_location}"
+    # analyze audio with shazamio
+    shazamioapi.shazamio_recognize(video.file)
+    # analyze audio with whisper
+    whisperstuff.whisper_transcribe(video.file) 
+
+
+
+
+):
 
     insert_analysis(new_id, user_id, f"Analysis {today}", today, result, video.filename)
     return {
