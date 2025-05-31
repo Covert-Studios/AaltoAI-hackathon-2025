@@ -1,5 +1,9 @@
 from flask import Flask, jsonify, request, abort
 import subprocess
+import os
+from collections import Counter
+import torch
+import clip
 
 app = Flask(__name__)
 
@@ -79,10 +83,6 @@ def analyze_video():
     os.makedirs("uploads", exist_ok=True)
     video.save(video_path)
 
-    # Log the received video
-    print(f"[INFO] Received video for analysis: {video.filename}")
-    print(f"[INFO] Saved to: {video_path}")
-
     # Call the CLIP classification script
     frame_dir = "frames"
     os.makedirs(frame_dir, exist_ok=True)
@@ -103,10 +103,6 @@ def analyze_video():
     # Summarize results
     topics_detected = [topic for _, topic in results]
     summary = Counter(topics_detected).most_common()
-
-    # Log the analysis summary
-    print(f"[INFO] Analysis complete for: {video.filename}")
-    print(f"[INFO] Summary: {summary}")
 
     return jsonify({"summary": summary})
 
