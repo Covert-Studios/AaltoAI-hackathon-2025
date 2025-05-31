@@ -11,6 +11,10 @@ import cv2  # For frame extraction
 import openai
 import logging  # Import logging module
 import tempfile
+import ffmpeg
+from shazamio import Shazam
+import whisper
+from datetime import datetime
 
 from analyze_db import insert_analysis, get_analyses_for_user, get_analysis_detail
 from clerk_auth import get_current_user_id
@@ -50,6 +54,7 @@ async def analyze_video(
 ):
     temp_dir = tempfile.gettempdir()
     temp_video_path = os.path.join(temp_dir, f"{uuid.uuid4()}.mp4")
+    temp_audio_path = os.path.join(temp_dir, f"{uuid.uuid4()}.mp3")
     try:
         # Save the uploaded video
         logging.info("Saving the uploaded video to a temporary file.")
@@ -64,36 +69,69 @@ async def analyze_video(
 
         # Process frames with CLIP
         logging.info("Processing frames with the CLIP model.")
-        results = []
+        frame_results = []
         for i, frame in enumerate(frames):
             logging.debug(f"Processing frame {i + 1}/{len(frames)}.")
             image = preprocess(frame).unsqueeze(0).to(device)  # Preprocess and add batch dimension
             with torch.no_grad():
                 image_features = clip_model.encode_image(image)
-            results.append(image_features.cpu().numpy().tolist())  # Convert to list for JSON serialization
+            frame_results.append(image_features.cpu().numpy().tolist())  # Convert to list for JSON serialization
 
-        logging.info("Frame processing completed. Returning results.")
+        # Extract audio from the video
+        logging.info("Extracting audio from the video.")
+        ffmpeg.input(temp_video_path).output(temp_audio_path).run(overwrite_output=True)
+        logging.info(f"Audio extracted to {temp_audio_path}.")
+
+        # Transcribe audio with Whisper
+        logging.info("Transcribing audio with Whisper.")
+        whisper_model = whisper.load_model("base")
+        transcription_result = whisper_model.transcribe(temp_audio_path)
+        transcription = transcription_result.get("text", "")
+        logging.info("Audio transcription completed.")
+
+        # Recognize music with Shazamio
+        logging.info("Recognizing music with Shazamio.")
+        shazam = Shazam()
+        shazam_result = await shazam.recognize_song(temp_audio_path)
+        music_info = shazam_result.get("track", {})
+        logging.info("Music recognition completed.")
+
+        # Generate ChatGPT response
+        logging.info("Generating ChatGPT response.")
+        chatgpt_prompt = f"Analyze the following transcription and music info:\n\nTranscription: {transcription}\n\nMusic Info: {music_info}"
+        chatgpt_response = openai.Completion.create(
+            engine="text-davinci-003",
+            prompt=chatgpt_prompt,
+            max_tokens=500
+        )
+        chatgpt_text = chatgpt_response.choices[0].text.strip()
+        logging.info("ChatGPT response generated.")
+        logging.info(f"ChatGPT Response: {chatgpt_text}")  # Print ChatGPT response to the terminal
+
+        # Get the current date and time
+        current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         # Return structured results
-        return {"features": results, "frame_count": len(frames)}
+        return {
+            "date_time": current_datetime,
+            "frames": {"features": frame_results, "frame_count": len(frames)},
+            "transcription": transcription,
+            "music_info": music_info,
+            "chatgpt_response": chatgpt_text,
+        }
 
     except Exception as e:
         logging.error(f"Error occurred during video analysis: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to analyze video: {str(e)}")
 
     finally:
-        # Clean up the temporary file
+        # Clean up temporary files
         if os.path.exists(temp_video_path):
-            logging.info(f"Cleaning up temporary file: {temp_video_path}.")
+            logging.info(f"Cleaning up temporary video file: {temp_video_path}.")
             os.remove(temp_video_path)
-        
-        return {
-            "id": new_id,
-            "title": f"Analysis {today}",
-            "date": today,
-            "result": result,
-            "video_filename": video.filename
-        }
+        if os.path.exists(temp_audio_path):
+            logging.info(f"Cleaning up temporary audio file: {temp_audio_path}.")
+            os.remove(temp_audio_path)
 
 def extract_frames(video_path, frame_interval=30):
     """
