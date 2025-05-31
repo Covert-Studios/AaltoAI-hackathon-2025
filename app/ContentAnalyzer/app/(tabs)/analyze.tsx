@@ -6,6 +6,8 @@ import { useRouter } from 'expo-router'
 import { useAuth } from '@clerk/clerk-expo'
 import * as ImagePicker from 'expo-image-picker'
 
+const API_BASE_URL = 'http://127.0.1:5000/'
+
 export default function AnalyzeScreen() {
   const router = useRouter()
   const { isSignedIn, isLoaded } = useAuth()
@@ -22,10 +24,21 @@ export default function AnalyzeScreen() {
   }, [isSignedIn, isLoaded, router])
 
   const fetchHistory = async () => {
-    // TODO: Replace with your API call
-    // Example: const res = await fetch('https://your-api/analyze/history')
-    // setHistory(await res.json())
-    setHistory([]) // Empty for now
+    try {
+      setLoading(true)
+      const res = await fetch(`${API_BASE_URL}/analyze/history`, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      if (!res.ok) throw new Error('Failed to fetch history')
+      const data = await res.json()
+      setHistory(data)
+    } catch (e) {
+      Alert.alert('Error', 'Failed to fetch history.')
+      setHistory([])
+    }
+    setLoading(false)
   }
 
   const handleTabPress = (tab: string) => {
@@ -44,20 +57,24 @@ export default function AnalyzeScreen() {
     if (!result.canceled && result.assets && result.assets.length > 0) {
       setLoading(true)
       try {
-        // Upload video to API
         const videoUri = result.assets[0].uri
-        // TODO: Replace with your API upload logic
-        // Example:
-        // const formData = new FormData()
-        // formData.append('video', { uri: videoUri, name: 'video.mp4', type: 'video/mp4' })
-        // const res = await fetch('https://your-api/analyze', { method: 'POST', body: formData })
-        // const data = await res.json()
-        // For now, just mock:
-        const data = {
-          id: String(Date.now()),
-          title: `Analysis ${history.length + 1}`,
-          date: new Date().toISOString().slice(0, 10),
-        }
+        const formData = new FormData()
+        formData.append('video', {
+          uri: videoUri,
+          name: 'video.mp4',
+          type: 'video/mp4',
+        } as any)
+
+        const res = await fetch(`${API_BASE_URL}/analyze`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+          body: formData,
+        })
+
+        if (!res.ok) throw new Error('Failed to upload video')
+        const data = await res.json()
         setHistory([data, ...history])
         router.push({ pathname: '/(tabs)/analyzeDetail', params: { id: data.id } })
       } catch (e) {
