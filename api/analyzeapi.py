@@ -111,12 +111,14 @@ async def analyze_video(
     new_id = str(uuid.uuid4())
     insert_analysis(new_id, user_id, f"Analysis {today}", today, result, video.filename)
 
+    # Return the full result, including ChatGPT output
     return {
         "id": new_id,
         "title": f"Analysis {today}",
         "date": today,
         "result": result,
-        "video_filename": video.filename
+        "video_filename": video.filename,
+        "chatgpt_result": chatgpt_result  # Include ChatGPT result directly in the response
     }
 
 def extract_frames(video_path, frame_interval=30):
