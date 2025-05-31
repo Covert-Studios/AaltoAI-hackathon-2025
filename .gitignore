@@ -25,6 +25,10 @@ youtube_clips
 .ipynb_checkpoints/
 
 # PyInstaller
+
+
+frames
+prepared_frames
 *.spec
 
 # Unit test / coverage reports
