@@ -2,8 +2,6 @@ shazamio
 pydub
 ffmpeg-python
 torch
-clip-by-openai
-opencv-python
 Pillow
 tqdm
 fastapi
@@ -13,3 +11,7 @@ uvicorn
 numpy
 whisper
 aiohttp
+jwt
+dotenv
+git+https://github.com/openai/whisper.git
+git+https://github.com/openai/CLIP.git
