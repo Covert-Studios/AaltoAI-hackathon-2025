@@ -15,7 +15,7 @@ pip-wheel-metadata/
 *.egg-info/
 dist/
 build/
-
+split
 fine_tuned_clip.pth
 UCF-101
 UCF101_frames
@@ -98,6 +98,11 @@ android/build/
 .env
 .env.*
 *.log
+
+Miniforge3-MacOSX-x86_64.sh
+Miniforge3-MacOSX-arm64.sh
+clipenv
+
 
 # Fastlane (if used)
 fastlane/report.xml
