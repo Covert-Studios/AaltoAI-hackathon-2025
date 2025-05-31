@@ -11,7 +11,7 @@ const API_BASE_URL = 'http://127.0.0.1:8000'
 
 export default function AnalyzeScreen() {
   const router = useRouter()
-  const { isSignedIn, isLoaded } = useAuth()
+  const { isSignedIn, isLoaded, getToken } = useAuth()
   const [history, setHistory] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
 
@@ -27,8 +27,10 @@ export default function AnalyzeScreen() {
   const fetchHistory = async () => {
     try {
       setLoading(true)
+      const token = await getToken()
       const res = await fetch(`${API_BASE_URL}/analyze/history`, {
         headers: {
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       })
@@ -76,8 +78,13 @@ export default function AnalyzeScreen() {
           } as any)
         }
 
+        const token = await getToken()
+        console.log('JWT:', token)
         const uploadRes = await fetch(`${API_BASE_URL}/analyze`, {
           method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
           body: formData,
         })
 

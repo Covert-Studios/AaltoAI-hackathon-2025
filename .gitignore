@@ -62,6 +62,8 @@ yarn-error.log*
 .pnpm-debug.log*
 .pnpm-store/
 
+videos/
+
 # Metro
 .expo/
 .expo-shared/

@@ -12,7 +12,7 @@ const CATEGORIES = ['All', 'Tech', 'Science', 'Art', 'Sports']
 
 export default function FeedScreen() {
   const router = useRouter()
-  const { isSignedIn, isLoaded } = useAuth()
+  const { isSignedIn, isLoaded, getToken } = useAuth()
   const [selectedCategory, setSelectedCategory] = useState('All')
   type FeedItem = {
     id: number
@@ -37,7 +37,13 @@ export default function FeedScreen() {
 
   const fetchFeed = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/trends`)
+      const token = await getToken()
+      const res = await fetch(`${API_BASE_URL}/trends`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
       if (!res.ok) throw new Error('Failed to fetch trends')
       const data = await res.json()
       setFeedItems(data)

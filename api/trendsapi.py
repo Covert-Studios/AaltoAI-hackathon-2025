@@ -1,10 +1,10 @@
-from fastapi import APIRouter
-from typing import List
+from fastapi import APIRouter, Depends
+from clerk_auth import get_current_user_id 
 
 router = APIRouter()
 
 @router.get("/trends")
-def get_trends():
+def get_trends(user_id: str = Depends(get_current_user_id)):
     """
     DUMMY DATA FOR TRENDS API
     """ 

@@ -2,25 +2,30 @@ import React, { useEffect, useState } from 'react'
 import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Alert } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
+import { useAuth } from '@clerk/clerk-expo'
 
 const API_BASE_URL = 'http://127.0.0.1:8000'
 
 export default function AnalyzeDetailScreen() {
   const { id } = useLocalSearchParams()
   const router = useRouter()
+  const { getToken } = useAuth()
   const [detail, setDetail] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (!id) return
     fetchDetail()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
 
   const fetchDetail = async () => {
     setLoading(true)
     try {
+      const token = await getToken()
       const res = await fetch(`${API_BASE_URL}/analyze/${id}`, {
         headers: {
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       })

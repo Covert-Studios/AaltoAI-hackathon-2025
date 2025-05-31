@@ -1,44 +1,45 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException
-from typing import List
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Request
 import uuid
+import datetime
+import os
+
+from analyze_db import insert_analysis, get_analyses_for_user, get_analysis_detail
+from clerk_auth import get_current_user_id
 
 router = APIRouter()
 
-# Dummy in-memory storage for analysis history
-analysis_history = [
-    {
-        "id": "1",
-        "title": "First Analysis",
-        "date": "2024-06-01",
-        "result": "This is a dummy analysis result for the first video."
-    },
-    {
-        "id": "2",
-        "title": "Second Analysis",
-        "date": "2024-06-02",
-        "result": "This is a dummy analysis result for the second video."
-    }
-]
-
 @router.get("/analyze/history")
-def get_analyze_history():
-    return analysis_history
+def get_analyze_history(user_id: str = Depends(get_current_user_id)):
+    return get_analyses_for_user(user_id)
 
 @router.get("/analyze/{analysis_id}")
-def get_analyze_detail(analysis_id: str):
-    for item in analysis_history:
-        if item["id"] == analysis_id:
-            return item
-    raise HTTPException(status_code=404, detail="Analysis not found")
+def get_analyze_detail_endpoint(analysis_id: str, user_id: str = Depends(get_current_user_id)):
+    detail = get_analysis_detail(user_id, analysis_id)
+    if not detail:
+        raise HTTPException(status_code=404, detail="Analysis not found")
+    return detail
 
 @router.post("/analyze")
-async def analyze_video(video: UploadFile = File(...)):
+async def analyze_video(
+    video: UploadFile = File(...),
+    user_id: str = Depends(get_current_user_id)
+):
+    # Save the uploaded video to disk
+    save_dir = "videos"
+    os.makedirs(save_dir, exist_ok=True)
+    file_location = os.path.join(save_dir, video.filename)
+    with open(file_location, "wb") as buffer:
+        buffer.write(await video.read())
+
     new_id = str(uuid.uuid4())
-    new_analysis = {
+    today = datetime.date.today().isoformat()
+    result = f"Saved uploaded video as: {file_location}"
+
+    insert_analysis(new_id, user_id, f"Analysis {today}", today, result, video.filename)
+    return {
         "id": new_id,
-        "title": f"Analysis {len(analysis_history) + 1}",
-        "date": "2024-06-03",
-        "result": f"Dummy analysis result for uploaded video: {video.filename}"
+        "title": f"Analysis {today}",
+        "date": today,
+        "result": result,
+        "video_filename": video.filename
     }
-    analysis_history.insert(0, new_analysis)
-    return new_analysis
