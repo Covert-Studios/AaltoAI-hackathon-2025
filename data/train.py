@@ -82,7 +82,6 @@ def validate_clip(model, dataloader, loss_fn, device, class_texts):
         text_inputs = torch.cat([clip.tokenize(f"a photo of a {c}") for c in class_texts]).to(device)
         text_features = model.encode_text(text_inputs)
 
-    with torch.no_grad():
         for images, labels in tqdm(dataloader, desc="Validating"):
             images, labels = images.to(device), labels.to(device)
 
@@ -109,22 +108,26 @@ if __name__ == "__main__":
     train_dir = 'data/split/train'
     val_dir = 'data/split/val'
 
-
-
     # Load CLIP model
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model, preprocess = clip.load("ViT-B/32", device=device)
     logging.info(f"Using device: {device}")
 
+    # Load existing weights to continue training
+    weights_path = "fine_tuned_clip.pth"
+    if os.path.exists(weights_path):
+        model.load_state_dict(torch.load(weights_path, map_location=device))
+        logging.info(f"Loaded weights from {weights_path}")
+    else:
+        logging.warning("No existing fine-tuned weights found. Starting fresh.")
+
     # Get common classes
     train_classes = set([d for d in os.listdir(train_dir) if os.path.isdir(os.path.join(train_dir, d)) and not d.startswith('.')])
     val_classes = set([d for d in os.listdir(val_dir) if os.path.isdir(os.path.join(val_dir, d)) and not d.startswith('.')])
-
     common_classes = train_classes.intersection(val_classes)
     if not common_classes:
         logging.error("No common classes found between train and val sets.")
         raise ValueError("Check your data directories.")
-
     class_names = sorted(list(common_classes))
     logging.info(f"Using {len(class_names)} classes: {class_names}")
 
@@ -137,11 +140,13 @@ if __name__ == "__main__":
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-5)
     loss_fn = torch.nn.CrossEntropyLoss()
 
-    epochs = 2
+    # Training loop
+    epochs = 1
     for epoch in range(epochs):
         logging.info(f"\nEpoch {epoch + 1}/{epochs}")
         train_loss = train_clip(model, train_loader, optimizer, loss_fn, device, class_names)
         val_loss, val_accuracy = validate_clip(model, val_loader, loss_fn, device, class_names)
 
-    torch.save(model.state_dict(), "fine_tuned_clip.pth")
-    logging.info("Model saved as fine_tuned_clip.pth")
+    # Save weights back to same file
+    torch.save(model.state_dict(), weights_path)
+    logging.info(f"Model saved as {weights_path}")
