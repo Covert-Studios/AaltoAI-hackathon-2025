@@ -6,7 +6,7 @@ import { useRouter } from 'expo-router'
 import { useAuth } from '@clerk/clerk-expo'
 import * as ImagePicker from 'expo-image-picker'
 
-const API_BASE_URL = 'http://127.0.1:5000/'
+const API_BASE_URL = 'http://127.0.0.1:8000'
 
 export default function AnalyzeScreen() {
   const router = useRouter()
@@ -67,9 +67,6 @@ export default function AnalyzeScreen() {
 
         const res = await fetch(`${API_BASE_URL}/analyze`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
           body: formData,
         })
 

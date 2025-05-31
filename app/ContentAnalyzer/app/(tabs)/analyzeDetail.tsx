@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Alert } from 're
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 
-const API_BASE_URL = 'http://127.0.1:8000/' // <-- Use your actual API base URL
+const API_BASE_URL = 'http://127.0.0.1:8000'
 
 export default function AnalyzeDetailScreen() {
   const { id } = useLocalSearchParams()
