@@ -133,7 +133,7 @@ Predicted Action: {most_common_action}
             ],
             max_tokens=500
         )
-        # FIX: Use chat_response, not chatgpt_response, and use the new API's message format
+        # !FIX: Use chat_response, not chatgpt_response, and use the new API's message format
         chatgpt_text = chat_response.choices[0].message.content.strip()
         logging.info("ChatGPT response generated.")
         logging.info(f"ChatGPT Response: {chatgpt_text}")  # Log ChatGPT response to the terminal

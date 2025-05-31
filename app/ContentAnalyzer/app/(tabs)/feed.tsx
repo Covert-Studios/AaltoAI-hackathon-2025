@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Modal, ActivityIndicator } from 'react-native'
-import { Ionicons } from '@expo/vector-icons'
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Modal, ActivityIndicator, TextInput } from 'react-native'
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
 import { Navbar } from '../components/Navbar'
 import { useRouter } from 'expo-router'
 import { useAuth } from '@clerk/clerk-expo'
@@ -15,6 +15,11 @@ export default function FeedScreen() {
   const { isSignedIn, isLoaded, getToken } = useAuth()
   const [selectedCategory, setSelectedCategory] = useState('All')
   const [loading, setLoading] = useState(false)
+  const [chatVisible, setChatVisible] = useState(false)
+  const [chatInput, setChatInput] = useState('')
+  const [chatMessages, setChatMessages] = useState<{from: 'user'|'ai', text: string}[]>([])
+  const [chatLoading, setChatLoading] = useState(false)
+
   type FeedItem = {
     id: number
     category: string
@@ -60,6 +65,33 @@ export default function FeedScreen() {
     if (tab === 'Feed') return
     if (tab === 'Analyze') router.replace('/(tabs)/analyze')
     if (tab === 'Profile') router.replace('/(tabs)/profile')
+  }
+
+  const sendChatMessage = async () => {
+    if (!chatInput.trim()) return
+    const userMsg: { from: 'user' | 'ai'; text: string } = { from: 'user', text: chatInput }
+    setChatMessages(msgs => [...msgs, userMsg])
+    setChatInput('')
+    setChatLoading(true)
+    try {
+      const token = await getToken()
+      const res = await fetch(`${API_BASE_URL}/ai-news`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ question: userMsg.text }),
+      })
+      if (!res.ok) throw new Error('AI error')
+      const data = await res.json()
+      // Assume data.reply is a string or array of news suggestions
+      setChatMessages(msgs => [...msgs, { from: 'ai', text: Array.isArray(data.reply) ? data.reply.join('\n\n') : data.reply }])
+    } catch (e) {
+      setChatMessages(msgs => [...msgs, { from: 'ai', text: 'Sorry, I could not fetch news right now.' }])
+    } finally {
+      setChatLoading(false)
+    }
   }
 
   if (!isLoaded || !isSignedIn) {
@@ -122,6 +154,67 @@ export default function FeedScreen() {
         </ScrollView>
       )}
       <Navbar onTabPress={handleTabPress} activeTab="Feed" />
+
+      {/* Floating Chat Button */}
+      <TouchableOpacity
+        style={styles.chatButton}
+        onPress={() => setChatVisible(true)}
+        activeOpacity={0.8}
+      >
+        <MaterialCommunityIcons name="chat-question" size={32} color="#fff" />
+      </TouchableOpacity>
+
+      {/* Chat Modal */}
+      <Modal
+        visible={chatVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setChatVisible(false)}
+      >
+        <View style={styles.chatModalOverlay}>
+          <View style={styles.chatModalContent}>
+            <Text style={styles.chatTitle}>Ask AI for News Suggestions</Text>
+            <ScrollView style={styles.chatMessages} contentContainerStyle={{paddingBottom: 16}}>
+              {chatMessages.map((msg, idx) => (
+                <View
+                  key={idx}
+                  style={[
+                    styles.chatBubble,
+                    msg.from === 'user' ? styles.chatBubbleUser : styles.chatBubbleAI,
+                  ]}
+                >
+                  <Text style={styles.chatBubbleText}>{msg.text}</Text>
+                </View>
+              ))}
+              {chatLoading && (
+                <ActivityIndicator size="small" color="#0a7ea4" style={{marginTop: 8}} />
+              )}
+            </ScrollView>
+            <View style={styles.chatInputRow}>
+              <TextInput
+                style={styles.chatInput}
+                value={chatInput}
+                onChangeText={setChatInput}
+                placeholder="What news do you need?"
+                editable={!chatLoading}
+              />
+              <TouchableOpacity
+                style={styles.chatSendButton}
+                onPress={sendChatMessage}
+                disabled={chatLoading}
+              >
+                <Ionicons name="send" size={22} color="#fff" />
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity
+              style={styles.chatCloseButton}
+              onPress={() => setChatVisible(false)}
+            >
+              <Text style={styles.closeButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       <Modal
         visible={!!selectedItem}
@@ -271,5 +364,96 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '700',
     fontSize: 16,
+  },
+  chatButton: {
+    position: 'absolute',
+    bottom: 90,
+    right: 24,
+    backgroundColor: '#0a7ea4',
+    borderRadius: 32,
+    width: 56,
+    height: 56,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+  },
+  chatModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.18)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  chatModalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 18,
+    paddingVertical: 24,
+    paddingHorizontal: 16,
+    alignItems: 'stretch',
+    width: 340,
+    maxHeight: '80%',
+    elevation: 8,
+  },
+  chatTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#0a7ea4',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  chatMessages: {
+    flexGrow: 0,
+    maxHeight: 220,
+    marginBottom: 10,
+  },
+  chatBubble: {
+    marginVertical: 4,
+    padding: 10,
+    borderRadius: 12,
+    maxWidth: '90%',
+  },
+  chatBubbleUser: {
+    alignSelf: 'flex-end',
+    backgroundColor: '#e0f7fa',
+  },
+  chatBubbleAI: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#f1f8e9',
+  },
+  chatBubbleText: {
+    fontSize: 15,
+    color: '#222',
+  },
+  chatInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  chatInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#e0e7ef',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 15,
+    backgroundColor: '#f7fafc',
+    marginRight: 8,
+  },
+  chatSendButton: {
+    backgroundColor: '#0a7ea4',
+    borderRadius: 8,
+    padding: 10,
+  },
+  chatCloseButton: {
+    marginTop: 12,
+    alignSelf: 'center',
+    backgroundColor: '#0a7ea4',
+    paddingVertical: 8,
+    paddingHorizontal: 32,
+    borderRadius: 8,
   },
 })
