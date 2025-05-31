@@ -40,33 +40,35 @@ def get_analyze_detail_endpoint(analysis_id: str, user_id: str = Depends(get_cur
 @router.post("/analyze")
 async def analyze_video(
     video: UploadFile = File(...),
-    user_id: str = Depends(get_current_user_id)
+    user_id: str = Depends(get_current_user_id),
+    frame_interval: int = 30  # Allow frame interval to be configurable
 ):
+    temp_video_path = f"/tmp/{uuid.uuid4()}.mp4"
     try:
         # Save the uploaded video
-        temp_video_path = f"/tmp/{uuid.uuid4()}.mp4"
         with open(temp_video_path, "wb") as f:
             f.write(await video.read())
+
+        # Extract frames from the video
+        frames = extract_frames(temp_video_path, frame_interval=frame_interval)
+
+        # Process frames with CLIP
+        results = []
+        for frame in frames:
+            image = preprocess(frame).unsqueeze(0).to(device)  # Preprocess and add batch dimension
+            with torch.no_grad():
+                image_features = clip_model.encode_image(image)
+            results.append(image_features.cpu().numpy().tolist())  # Convert to list for JSON serialization
+
+        # Return structured results
+        return {"features": results, "frame_count": len(frames)}
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to save video: {str(e)}")
-
-    # Extract frames from the video (you already have an `extract_frames` function)
-    frames = extract_frames(temp_video_path)
-
-    # Process frames with CLIP
-    results = []
-    batch_size = 16
-    for i in range(0, len(frames), batch_size):
-        batch = frames[i:i + batch_size]
-        images = torch.stack([preprocess(frame) for frame in batch]).to(device)
-        with torch.no_grad():
-            image_features = clip_model.encode_image(images)
-        results.extend(image_features.cpu().numpy())
-
-    # Clean up the temporary file
-    os.remove(temp_video_path)
-
-    return {"features": results}
+        raise HTTPException(status_code=500, detail=f"Failed to analyze video: {str(e)}")
+    finally:
+        # Clean up the temporary file
+        if os.path.exists(temp_video_path):
+            os.remove(temp_video_path)
 
 def extract_frames(video_path, frame_interval=30):
     """
