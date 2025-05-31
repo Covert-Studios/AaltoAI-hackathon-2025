@@ -60,7 +60,7 @@ python app/main.py --input path/to/video.mp4
    python api/api.py 
    ```
 5. **Start Expo**
-   Navigate to the Content Analyzer Folder
+   & Navigate to the Content Analyzer Folder
    ```bash
    npx expo start
    ```
