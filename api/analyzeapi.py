@@ -9,7 +9,7 @@ from torchvision import transforms
 from PIL import Image
 import cv2  # For frame extraction
 import openai
-import tempfile
+import logging  # Import logging module
 
 from analyze_db import insert_analysis, get_analyses_for_user, get_analysis_detail
 from clerk_auth import get_current_user_id
@@ -27,6 +27,9 @@ clip_model.eval()
 # Load OpenAI API key from environment variables
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
+# Configure logging
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+
 @router.get("/analyze/history")
 def get_analyze_history(user_id: str = Depends(get_current_user_id)):
     return get_analyses_for_user(user_id)
@@ -42,34 +45,44 @@ def get_analyze_detail_endpoint(analysis_id: str, user_id: str = Depends(get_cur
 async def analyze_video(
     video: UploadFile = File(...),
     user_id: str = Depends(get_current_user_id),
-    frame_interval: int = 30
+    frame_interval: int = 30  # Allow frame interval to be configurable
 ):
-    temp_dir = tempfile.gettempdir()
-    temp_video_path = os.path.join(temp_dir, f"{uuid.uuid4()}.mp4")
+    temp_video_path = f"/tmp/{uuid.uuid4()}.mp4"
     try:
+        # Save the uploaded video
+        logging.info("Saving the uploaded video to a temporary file.")
         with open(temp_video_path, "wb") as f:
             f.write(await video.read())
+        logging.info(f"Video saved to {temp_video_path}.")
 
         # Extract frames from the video
+        logging.info(f"Extracting frames from the video with frame_interval={frame_interval}.")
         frames = extract_frames(temp_video_path, frame_interval=frame_interval)
+        logging.info(f"Extracted {len(frames)} frames from the video.")
 
         # Process frames with CLIP
+        logging.info("Processing frames with the CLIP model.")
         results = []
-        for frame in frames:
+        for i, frame in enumerate(frames):
+            logging.debug(f"Processing frame {i + 1}/{len(frames)}.")
             image = preprocess(frame).unsqueeze(0).to(device)  # Preprocess and add batch dimension
             with torch.no_grad():
                 image_features = clip_model.encode_image(image)
             results.append(image_features.cpu().numpy().tolist())  # Convert to list for JSON serialization
 
+        logging.info("Frame processing completed. Returning results.")
+
         # Return structured results
         return {"features": results, "frame_count": len(frames)}
 
     except Exception as e:
-        print("Analyze error:", e)
-        raise HTTPException(status_code=500, detail=str(e))
+        logging.error(f"Error occurred during video analysis: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to analyze video: {str(e)}")
+
     finally:
         # Clean up the temporary file
         if os.path.exists(temp_video_path):
+            logging.info(f"Cleaning up temporary file: {temp_video_path}.")
             os.remove(temp_video_path)
 
 def extract_frames(video_path, frame_interval=30):
