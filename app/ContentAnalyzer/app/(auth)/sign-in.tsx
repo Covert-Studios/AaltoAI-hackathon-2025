@@ -1,8 +1,9 @@
 import { useSignIn } from '@clerk/clerk-expo'
 import { Link, useRouter } from 'expo-router'
-import { Text, TextInput, TouchableOpacity, View, StyleSheet, Modal, Animated, ActivityIndicator } from 'react-native' // <-- add ActivityIndicator
+import { Text, TextInput, TouchableOpacity, View, StyleSheet, Modal, Animated, ActivityIndicator } from 'react-native'
 import React from 'react'
 import { HeaderTitle } from '@react-navigation/elements'
+
 
 export default function Page() {
   const { signIn, setActive, isLoaded } = useSignIn()
@@ -13,8 +14,7 @@ export default function Page() {
   const [error, setError] = React.useState<string | null>(null)
   const [showError, setShowError] = React.useState(false)
   const fadeAnim = React.useRef(new Animated.Value(0)).current
-  const [loading, setLoading] = React.useState(false) // <-- add loading state
-
+  const [loading, setLoading] = React.useState(false)
   const onSignInPress = async () => {
     if (!isLoaded) return
     setLoading(true)

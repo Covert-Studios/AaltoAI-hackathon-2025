@@ -4,7 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { useAuth } from '@clerk/clerk-expo'
 
-const API_BASE_URL = 'http://127.0.0.1:8000'
+const API_BASE_URL = 'http://192.168.82.141:8000'
 
 export default function AnalyzeDetailScreen() {
   const { id } = useLocalSearchParams()
@@ -13,7 +13,7 @@ export default function AnalyzeDetailScreen() {
   const [detail, setDetail] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
+  useEffect(() => { 
     if (!id) return
     fetchDetail()
     // eslint-disable-next-line react-hooks/exhaustive-deps

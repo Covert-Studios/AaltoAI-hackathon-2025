@@ -5,7 +5,7 @@ import { Navbar } from '../components/Navbar'
 import { useRouter } from 'expo-router'
 import { useAuth } from '@clerk/clerk-expo'
 
-const API_BASE_URL = 'http://127.0.0.1:8000' // Change to your backend URL
+const API_BASE_URL = 'http://192.168.82.141:8000'
 
 // Example categories for the feed
 const CATEGORIES = ['All', 'Tech', 'Science', 'Art', 'Sports']

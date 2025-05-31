@@ -7,7 +7,7 @@ import { useAuth } from '@clerk/clerk-expo'
 import * as ImagePicker from 'expo-image-picker'
 import * as FileSystem from 'expo-file-system'
 
-const API_BASE_URL = 'http://127.0.0.1:8000'
+const API_BASE_URL = 'http://192.168.82.141:8000'
 
 export default function AnalyzeScreen() {
   const router = useRouter()
