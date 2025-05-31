@@ -144,17 +144,26 @@ Filename: {video.filename}.
 Determine the topic of the video based on all that information.
 Add a score from 0 to 100 based on the following factors:
 However, don't base the videos center solely on the most common action, but rather on the overall content and context of the video.
-Give a score based on the following factors:
-1. **Music**: Is there a recognizable or trending song? How does it fit the video?
+Give a score based on the following factors (every factor is 25 scores. add them together to get the final score.):
+1. **Music**: Is there a recognizable or trending song? How does it fit the video? 
 2. **Transcription:** What is the spoken content? Does it add value or context?
 3. **Platform Accessibility:** Is the content suitable for platforms like TikTok, Instagram, or YouTube Shorts?
 4. **Visual Appeal & Social Sharing:** How engaging are the visuals? Are they high quality?
 
+Example:
+1 - Music: <score>/25 - <score explanation>
+2 - Transcription: <score>/25 - <score explanation>
+3 - Platform Accessibility: <score>/25 - <score explanation>
+4 - Visual Appeal & Social Sharing: <score>/25 - <score explanation>
+
+Suggestions for improvement:
+<list of suggestions to increase virality based on the above factors>
+
 Suggest improvements to increase the video's virality based on these factors as a list.
-give it in JSON format with the following structure:
+Give it in JSON format with the following structure:
 {{
-    "score": "<integer from 0 to 100>",
-    "explanation": "<string explaining the score and suggestions for improvement>"
+    "score": <integer from 0 to 100>,
+    "explanation": "<string explaining the score and suggestions for improvement. do it like the example i gave you>"
 }}
 """
 
@@ -185,14 +194,15 @@ give it in JSON format with the following structure:
         today = datetime.now().strftime("%Y-%m-%d")
         new_id = str(uuid.uuid4())
 
-        insert_analysis(new_id, user_id, f"Analysis {today}", today, explanation, video.filename)
+        # Save explanation as 'result' in the DB
+        insert_analysis(new_id, user_id, f"Analysis {today}", today, explanation, video.filename, score)
         logging.info(f"Inserted analysis ID {new_id} for user {user_id}")
 
         return {
             "id": new_id,
             "title": f"Analysis {today}",
             "date": today,
-            "result": explanation,
+            "result": explanation,  # Still return as 'result' in API
             "video_filename": video.filename,
             "predicted_action": most_common_action,
             "transcription": transcription,

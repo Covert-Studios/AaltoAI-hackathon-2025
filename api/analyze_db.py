@@ -27,18 +27,20 @@ def init_db():
         title TEXT,
         date TEXT,
         result TEXT,
-        video_filename TEXT
+        video_filename TEXT,
+        score INTEGER
     )
     """)
     conn.commit()
     conn.close()
 
-def insert_analysis(id, user_id, title, date, result, video_filename):
+def insert_analysis(id, user_id, title, date, explanation, filename, score):
+    """Insert a new analysis into the database."""
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute(
-        "INSERT INTO analysis (id, user_id, title, date, result, video_filename) VALUES (?, ?, ?, ?, ?, ?)",
-        (id, user_id, title, date, result, video_filename)
+        "INSERT INTO analysis (id, user_id, title, date, result, video_filename, score) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (id, user_id, title, date, explanation, filename, score)
     )
     conn.commit()
     conn.close()
@@ -57,17 +59,18 @@ def get_analyses_for_user(user_id):
 def get_analysis_detail(user_id, analysis_id):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("SELECT id, user_id, title, date, result, video_filename FROM analysis WHERE user_id = ? AND id = ?", (user_id, analysis_id))
+    c.execute("SELECT id, user_id, title, date, result, video_filename, score FROM analysis WHERE user_id = ? AND id = ?", (user_id, analysis_id))
     row = c.fetchone()
     conn.close()
     if row:
         return {
             "id": row[0],
-            "user_id": row[1],  # <-- add this line
+            "user_id": row[1],
             "title": row[2],
             "date": row[3],
             "result": row[4],
-            "video_filename": row[5]
+            "video_filename": row[5],
+            "score": row[6]
         }
     return None
 

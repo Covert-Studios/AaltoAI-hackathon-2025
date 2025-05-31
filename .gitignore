@@ -119,3 +119,6 @@ fastlane/test_output/
 # Windows
 Thumbs.db
 ehthumbs.db
+
+
+*.sqllite3

@@ -89,135 +89,152 @@ export default function AnalyzeDetailScreen() {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <View style={{ flex: 1 }}>
       {/* Back Button */}
       <TouchableOpacity
-        style={{ position: 'absolute', top: 24, left: 16, zIndex: 10 }}
-        onPress={() => router.back()}
+        style={{
+          position: 'absolute',
+          top: 24,
+          left: 16,
+          zIndex: 100, // Make sure it's above everything
+          backgroundColor: 'rgba(255,255,255,0.7)', // Optional: makes it more visible
+          borderRadius: 20,
+          padding: 2,
+        }}
+        onPress={() => {
+          if (router.canGoBack?.()) {
+            router.back();
+          } else {
+            router.replace('/'); // or your main screen route
+          }
+        }}
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
       >
         <Ionicons name="arrow-back" size={28} color="#0a7ea4" />
       </TouchableOpacity>
 
-      <Ionicons name="analytics-outline" size={48} color="#0a7ea4" style={{ marginBottom: 16, marginTop: 32 }} />
-      
-      <Text style={styles.title}>{detail.title}</Text>
-      <Text style={styles.date}>{detail.date}</Text>
-      <Text style={{ color: '#888', fontSize: 14, marginBottom: 8 }}>ID: {detail.id}</Text>
+      <ScrollView contentContainerStyle={styles.container}>
+        <Ionicons name="analytics-outline" size={48} color="#0a7ea4" style={{ marginBottom: 16, marginTop: 32 }} />
+        
+        <Text style={styles.title}>{detail.title}</Text>
+        <Text style={styles.date}>{detail.date}</Text>
+        <Text style={{ color: '#888', fontSize: 14, marginBottom: 8 }}>ID: {detail.id}</Text>
 
-      <View style={{ alignItems: 'center', marginBottom: 28 }}>
-        <AnimatedCircularProgress
-          size={100}
-          width={12}
-          fill={Number(detail.score) || 0}
-          tintColor={
-            Number(detail.score) >= 80
-              ? '#4caf50'
-              : Number(detail.score) >= 50
-              ? '#ffc107'
-              : '#f44336'
-          }
-          backgroundColor="#eee"
-          rotation={225}
-          arcSweepAngle={270}
-          lineCap="round"
-          duration={1800}
-          easing={Easing.out(Easing.cubic)}
-        >
-          {(fill: number) => (
-            <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#0a7ea4' }}>
-              {`${Math.round(fill)}%`}
-            </Text>
-          )}
-        </AnimatedCircularProgress>
-        <Text style={{ color: '#888', fontSize: 15, marginTop: 6, fontWeight: '600' }}>
-          Score
-        </Text>
-      </View>
-
-      <View style={styles.result}>
-        <Text style={{ fontSize: 18, fontWeight: '700', color: '#0a7ea4', marginBottom: 8 }}>
-          Analysis & Suggestions
-        </Text>
-        <Markdown
-          style={{
-            body: { color: '#222', fontSize: 16 },
-            heading1: { color: '#0a7ea4', fontWeight: 'bold', fontSize: 24, marginTop: 24 },
-            heading2: { color: '#0a7ea4', fontWeight: 'bold', fontSize: 20, marginTop: 18 },
-            heading3: { color: '#0a7ea4', fontWeight: 'bold', fontSize: 18, marginTop: 16 },
-            strong: { fontWeight: 'bold' },
-            bullet_list: { marginLeft: 16 },
-            ordered_list: { marginLeft: 16 },
-            list_item: { marginBottom: 4 },
-            paragraph: { marginBottom: 8 },
-          }}
-        >
-          {detail.result}
-        </Markdown>
-      </View>
-
-      <TouchableOpacity
-        style={{
-          backgroundColor: '#0a7ea4',
-          paddingVertical: 8,
-          paddingHorizontal: 16,
-          borderRadius: 8,
-          marginTop: 16,
-          alignSelf: 'center',
-        }}
-        onPress={() => setRenameModalVisible(true)}
-      >
-        <Text style={{ color: '#fff', fontWeight: '600' }}>Change Name</Text>
-      </TouchableOpacity>
-
-      <Modal
-        visible={renameModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setRenameModalVisible(false)}
-      >
-        <View style={{
-          flex: 1,
-          backgroundColor: 'rgba(0,0,0,0.18)',
-          justifyContent: 'center',
-          alignItems: 'center',
-        }}>
-          <View style={{
-            backgroundColor: '#fff',
-            borderRadius: 18,
-            padding: 24,
-            alignItems: 'center',
-            width: 300,
-          }}>
-            <Text style={{ fontSize: 18, fontWeight: '700', color: '#0a7ea4', marginBottom: 12 }}>Rename Analysis</Text>
-            <TextInput
-              style={{
-                borderWidth: 1,
-                borderColor: '#ccc',
-                borderRadius: 8,
-                padding: 8,
-                width: '100%',
-                marginBottom: 16,
-              }}
-              placeholder="New name"
-              value={newTitle}
-              onChangeText={setNewTitle}
-            />
-            <TouchableOpacity
-              style={{ backgroundColor: '#0a7ea4', padding: 10, borderRadius: 8, marginBottom: 8, width: '100%' }}
-              onPress={handleRename}
-            >
-              <Text style={{ color: '#fff', textAlign: 'center', fontWeight: '600' }}>Save</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={{ backgroundColor: '#ccc', padding: 10, borderRadius: 8, width: '100%' }}
-              onPress={() => setRenameModalVisible(false)}
-            >
-              <Text style={{ color: '#222', textAlign: 'center', fontWeight: '600' }}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
+        <View style={{ alignItems: 'center', marginBottom: 28 }}>
+          <AnimatedCircularProgress
+            size={100}
+            width={12}
+            fill={Number(detail.score) || 0}
+            tintColor={
+              Number(detail.score) >= 80
+                ? '#4caf50'
+                : Number(detail.score) >= 50
+                ? '#ffc107'
+                : '#f44336'
+            }
+            backgroundColor="#eee"
+            rotation={225}
+            arcSweepAngle={270}
+            lineCap="round"
+            duration={1800}
+            easing={Easing.out(Easing.cubic)}
+          >
+            {(fill: number) => (
+              <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#0a7ea4' }}>
+                {`${Math.round(fill)}%`}
+              </Text>
+            )}
+          </AnimatedCircularProgress>
+          <Text style={{ color: '#888', fontSize: 15, marginTop: 6, fontWeight: '600' }}>
+            Score
+          </Text>
         </View>
-      </Modal>
-    </ScrollView>
+
+        <View style={styles.result}>
+          <Text style={{ fontSize: 18, fontWeight: '700', color: '#0a7ea4', marginBottom: 8 }}>
+            Analysis & Suggestions
+          </Text>
+          <Markdown
+            style={{
+              body: { color: '#222', fontSize: 16 },
+              heading1: { color: '#0a7ea4', fontWeight: 'bold', fontSize: 24, marginTop: 24 },
+              heading2: { color: '#0a7ea4', fontWeight: 'bold', fontSize: 20, marginTop: 18 },
+              heading3: { color: '#0a7ea4', fontWeight: 'bold', fontSize: 18, marginTop: 16 },
+              strong: { fontWeight: 'bold' },
+              bullet_list: { marginLeft: 16 },
+              ordered_list: { marginLeft: 16 },
+              list_item: { marginBottom: 4 },
+              paragraph: { marginBottom: 8 },
+            }}
+          >
+            {detail.result}
+          </Markdown>
+        </View>
+
+        <TouchableOpacity
+          style={{
+            backgroundColor: '#0a7ea4',
+            paddingVertical: 8,
+            paddingHorizontal: 16,
+            borderRadius: 8,
+            marginTop: 16,
+            alignSelf: 'center',
+          }}
+          onPress={() => setRenameModalVisible(true)}
+        >
+          <Text style={{ color: '#fff', fontWeight: '600' }}>Change Name</Text>
+        </TouchableOpacity>
+
+        <Modal
+          visible={renameModalVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setRenameModalVisible(false)}
+        >
+          <View style={{
+            flex: 1,
+            backgroundColor: 'rgba(0,0,0,0.18)',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}>
+            <View style={{
+              backgroundColor: '#fff',
+              borderRadius: 18,
+              padding: 24,
+              alignItems: 'center',
+              width: 300,
+            }}>
+              <Text style={{ fontSize: 18, fontWeight: '700', color: '#0a7ea4', marginBottom: 12 }}>Rename Analysis</Text>
+              <TextInput
+                style={{
+                  borderWidth: 1,
+                  borderColor: '#ccc',
+                  borderRadius: 8,
+                  padding: 8,
+                  width: '100%',
+                  marginBottom: 16,
+                }}
+                placeholder="New name"
+                value={newTitle}
+                onChangeText={setNewTitle}
+              />
+              <TouchableOpacity
+                style={{ backgroundColor: '#0a7ea4', padding: 10, borderRadius: 8, marginBottom: 8, width: '100%' }}
+                onPress={handleRename}
+              >
+                <Text style={{ color: '#fff', textAlign: 'center', fontWeight: '600' }}>Save</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{ backgroundColor: '#ccc', padding: 10, borderRadius: 8, width: '100%' }}
+                onPress={() => setRenameModalVisible(false)}
+              >
+                <Text style={{ color: '#222', textAlign: 'center', fontWeight: '600' }}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+      </ScrollView>
+    </View>
   )
 }
 
