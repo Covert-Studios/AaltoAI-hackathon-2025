@@ -9,6 +9,7 @@ from torchvision import transforms
 from PIL import Image
 import cv2  # For frame extraction
 import openai
+import tempfile
 
 from analyze_db import insert_analysis, get_analyses_for_user, get_analysis_detail
 from clerk_auth import get_current_user_id
@@ -41,11 +42,11 @@ def get_analyze_detail_endpoint(analysis_id: str, user_id: str = Depends(get_cur
 async def analyze_video(
     video: UploadFile = File(...),
     user_id: str = Depends(get_current_user_id),
-    frame_interval: int = 30  # Allow frame interval to be configurable
+    frame_interval: int = 30
 ):
-    temp_video_path = f"/tmp/{uuid.uuid4()}.mp4"
+    temp_dir = tempfile.gettempdir()
+    temp_video_path = os.path.join(temp_dir, f"{uuid.uuid4()}.mp4")
     try:
-        # Save the uploaded video
         with open(temp_video_path, "wb") as f:
             f.write(await video.read())
 
@@ -64,7 +65,8 @@ async def analyze_video(
         return {"features": results, "frame_count": len(frames)}
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to analyze video: {str(e)}")
+        print("Analyze error:", e)
+        raise HTTPException(status_code=500, detail=str(e))
     finally:
         # Clean up the temporary file
         if os.path.exists(temp_video_path):
