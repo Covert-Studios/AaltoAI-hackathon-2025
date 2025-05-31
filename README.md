@@ -33,6 +33,7 @@ python app/main.py --input path/to/video.mp4
 ---
 
 ## 🔧 How to Get It Working
+**First of all, clone the repo**
 
 1. **Install Dependencies**  
    Make sure you have Python 3.8 or higher installed. Then run:
