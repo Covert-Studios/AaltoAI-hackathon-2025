@@ -13,6 +13,7 @@ from shazamio import Shazam
 import whisper
 from datetime import datetime
 import clip
+import re
 import json
 
 from analyze_db import insert_analysis, get_analyses_for_user, get_analysis_detail
@@ -130,14 +131,32 @@ async def analyze_video(
         music_info = shazam_result.get("track", {})
         logging.info(f"Music recognition: {music_info if music_info else 'No track info found'}")
 
-        chatgpt_prompt = f"""Analyze the following transcription and music info:
+        chatgpt_prompt = f"""
+You are an expert video and music analyst. Analyze the following video content for virality and improvement potential.
+The data of the video: 
 
-        Transcription: {transcription}
+Transcription: {transcription if transcription else "None"},
+Music Info: {music_info if music_info else "No track info found"},
+Most Common Action: {most_common_action if most_common_action else "None"}.
+Video Frames: {len(frames)} frames extracted.
+Filename: {video.filename}.
 
-        Music Info: {music_info}
+Determine the topic of the video based on all that information.
+Add a score from 0 to 100 based on the following factors:
+However, don't base the videos center solely on the most common action, but rather on the overall content and context of the video.
+Give a score based on the following factors:
+1. **Music**: Is there a recognizable or trending song? How does it fit the video?
+2. **Transcription:** What is the spoken content? Does it add value or context?
+3. **Platform Accessibility:** Is the content suitable for platforms like TikTok, Instagram, or YouTube Shorts?
+4. **Visual Appeal & Social Sharing:** How engaging are the visuals? Are they high quality?
 
-        Predicted Action: {most_common_action}
-        """
+Suggest improvements to increase the video's virality based on these factors as a list.
+give it in JSON format with the following structure:
+{{
+    "score": "<integer from 0 to 100>",
+    "explanation": "<string explaining the score and suggestions for improvement>"
+}}
+"""
 
         logging.info("Sending prompt to ChatGPT.")
         client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -147,26 +166,38 @@ async def analyze_video(
                 {"role": "system", "content": "You are an expert video and music analyst. Analyze the prompt and predict the virality of this video based on several factors, then offer improvements."},
                 {"role": "user", "content": chatgpt_prompt},
             ],
-            max_tokens=500
+            max_tokens=700
         )
         chatgpt_text = chat_response.choices[0].message.content.strip()
         logging.info(f"ChatGPT Response: {chatgpt_text}")
 
+        # Parse JSON from GPT response
+        try:
+            chatgpt_text_clean = re.sub(r"^```json|^```|```$", "", chatgpt_text, flags=re.MULTILINE).strip()
+            gpt_result = json.loads(chatgpt_text_clean)
+            score = int(gpt_result.get("score", 0))
+            explanation = gpt_result.get("explanation", "")
+        except Exception as e:
+            logging.error(f"Failed to parse GPT response as JSON: {e}")
+            score = 0
+            explanation = chatgpt_text
+
         today = datetime.now().strftime("%Y-%m-%d")
         new_id = str(uuid.uuid4())
 
-        insert_analysis(new_id, user_id, f"Analysis {today}", today, chatgpt_text, video.filename)
+        insert_analysis(new_id, user_id, f"Analysis {today}", today, explanation, video.filename)
         logging.info(f"Inserted analysis ID {new_id} for user {user_id}")
 
         return {
             "id": new_id,
             "title": f"Analysis {today}",
             "date": today,
-            "result": chatgpt_text,
+            "result": explanation,
             "video_filename": video.filename,
             "predicted_action": most_common_action,
             "transcription": transcription,
             "music_info": music_info,
+            "score": score,
         }
 
     except Exception as e:

@@ -108,11 +108,11 @@ export default function AnalyzeDetailScreen() {
         <AnimatedCircularProgress
           size={100}
           width={12}
-          fill={typeof detail.score === 'number' ? detail.score : 0}
+          fill={Number(detail.score) || 0}
           tintColor={
-            detail.score >= 80
+            Number(detail.score) >= 80
               ? '#4caf50'
-              : detail.score >= 50
+              : Number(detail.score) >= 50
               ? '#ffc107'
               : '#f44336'
           }
@@ -135,6 +135,9 @@ export default function AnalyzeDetailScreen() {
       </View>
 
       <View style={styles.result}>
+        <Text style={{ fontSize: 18, fontWeight: '700', color: '#0a7ea4', marginBottom: 8 }}>
+          Analysis & Suggestions
+        </Text>
         <Markdown
           style={{
             body: { color: '#222', fontSize: 16 },
