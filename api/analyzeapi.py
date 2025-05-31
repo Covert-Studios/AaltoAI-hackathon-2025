@@ -2,50 +2,71 @@ from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 import uuid
 import os
 import torch
+import logging
 from torchvision import transforms
 from PIL import Image
 import cv2
 import openai
-import logging
 import tempfile
 import ffmpeg
 from shazamio import Shazam
 import whisper
 from datetime import datetime
 import clip
-import json  # Add this at the top with other imports
+import json
 
 from analyze_db import insert_analysis, get_analyses_for_user, get_analysis_detail
 from clerk_auth import get_current_user_id
 
 router = APIRouter()
 
-# Load CLIP model
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-clip_model, preprocess = clip.load("ViT-B/32", device=device)
-clip_model.load_state_dict(torch.load("../fine_tuned_clip.pth", map_location=device))
-clip_model.to(device)
-clip_model.eval()
-
-# Set up OpenAI API
-openai.api_key = os.getenv("OPENAI_API_KEY")
-
 # Set up logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logging.info("Initializing analyzeapi.py")
 
-# Your class names from training (UCF-101 example)
+# Load CLIP model
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+logging.info(f"Using device: {device}")
+
+# Check model path
+model_path = "../fine_tuned_clip.pth"
+if not os.path.exists(model_path):
+    logging.error(f"Model path not found: {model_path}")
+    raise FileNotFoundError(f"Model file not found at {model_path}")
+
+try:
+    clip_model, preprocess = clip.load("ViT-B/32", device=device)
+    logging.info("Original CLIP model loaded.")
+    clip_model.load_state_dict(torch.load(model_path, map_location=device))
+    clip_model.to(device)
+    clip_model.eval()
+    logging.info("Fine-tuned CLIP weights loaded and model set to eval mode.")
+except Exception as e:
+    logging.error(f"Failed to load CLIP model or weights: {e}")
+    raise e
+
+# Check OpenAI key
+if not os.getenv("OPENAI_API_KEY"):
+    logging.error("OPENAI_API_KEY is not set in environment.")
+    raise EnvironmentError("OPENAI_API_KEY environment variable is not configured.")
+openai.api_key = os.getenv("OPENAI_API_KEY")
+
+# Class names
 class_names = [
-    "ApplyEyeMakeup", "Archery", "BabyCrawling", "BalanceBeam", "BandMarching",  # Extend with all your used classes
-    "Basketball", "BenchPress", "Biking", "Billiards", "BlowDryHair",
-    "BodyWeightSquats", "Bowling", "BoxingPunchingBag", "BreastStroke", "BrushingTeeth"
+    "skateboarding", "guitar playing", "cooking", "playing piano", "soccer juggling",
+    "basketball dunk", "yoga", "weightlifting", "running", "biking", "swimming", "surfing",
+    "boxing", "dancing", "karate", "walking a dog", "fishing", "skiing", "snowboarding",
+    "playing drums", "parkour", "typing on a keyboard", "playing violin", "jump rope", "tennis serve"
 ]
 
 @router.get("/analyze/history")
 def get_analyze_history(user_id: str = Depends(get_current_user_id)):
+    logging.info("GET /analyze/history called.")
     return get_analyses_for_user(user_id)
 
 @router.get("/analyze/{analysis_id}")
 def get_analyze_detail_endpoint(analysis_id: str, user_id: str = Depends(get_current_user_id)):
+    logging.info(f"GET /analyze/{analysis_id} called.")
     detail = get_analysis_detail(user_id, analysis_id)
     if not detail:
         raise HTTPException(status_code=404, detail="Analysis not found")
@@ -57,26 +78,26 @@ async def analyze_video(
     user_id: str = Depends(get_current_user_id),
     frame_interval: int = 30
 ):
+    logging.info("POST /analyze called.")
     temp_dir = tempfile.gettempdir()
     temp_video_path = os.path.join(temp_dir, f"{uuid.uuid4()}.mp4")
     temp_audio_path = os.path.join(temp_dir, f"{uuid.uuid4()}.mp3")
 
     try:
-        # Save uploaded video
-        logging.info("Saving uploaded video.")
+        logging.info("Saving uploaded video to temporary directory.")
         with open(temp_video_path, "wb") as f:
             f.write(await video.read())
-        logging.info(f"Video saved to {temp_video_path}")
+        logging.info(f"Video saved to: {temp_video_path}")
 
-        # Extract frames
         logging.info(f"Extracting frames every {frame_interval} frames.")
         frames = extract_frames(temp_video_path, frame_interval)
         logging.info(f"Extracted {len(frames)} frames.")
 
-        # Classify frames using CLIP
+        if not frames:
+            raise HTTPException(status_code=400, detail="No frames extracted from video.")
+
         logging.info("Classifying frames with CLIP model.")
         class_votes = []
-
         with torch.no_grad():
             text_inputs = torch.cat([clip.tokenize(f"a photo of a person doing {c}") for c in class_names]).to(device)
             text_features = clip_model.encode_text(text_inputs)
@@ -86,33 +107,29 @@ async def analyze_video(
                 image_features = clip_model.encode_image(image_input)
                 logits = (image_features @ text_features.T).softmax(dim=-1)
                 top_class = logits.argmax().item()
-                class_votes.append(class_names[top_class])
+                predicted_label = class_names[top_class]
+                class_votes.append(predicted_label)
+                logging.info(f"Frame {i} predicted as: {predicted_label}")
 
-        # Determine most common class
         most_common_action = max(set(class_votes), key=class_votes.count)
         logging.info(f"Predicted action: {most_common_action}")
 
-        # Extract audio from video
-        logging.info("Extracting audio.")
+        logging.info("Extracting audio from video.")
         ffmpeg.input(temp_video_path).output(temp_audio_path).run(overwrite_output=True, quiet=True)
-        logging.info(f"Audio saved to {temp_audio_path}")
+        logging.info(f"Audio extracted to: {temp_audio_path}")
 
-        # Transcribe with Whisper
         logging.info("Transcribing audio with Whisper.")
         whisper_model = whisper.load_model("base")
         transcription_result = whisper_model.transcribe(temp_audio_path)
         transcription = transcription_result.get("text", "")
-        logging.info("Transcription complete.")
+        logging.info(f"Transcription: {transcription if transcription else 'None'}")
 
-        # Recognize music with Shazamio
-        logging.info("Recognizing music.")
+        logging.info("Recognizing music with Shazamio.")
         shazam = Shazam()
         shazam_result = await shazam.recognize(temp_audio_path)
         music_info = shazam_result.get("track", {})
-        logging.info("Music recognition complete.")
+        logging.info(f"Music recognition: {music_info if music_info else 'No track info found'}")
 
-        # Prepare ChatGPT prompt
-        logging.info("Preparing ChatGPT prompt.")  
         chatgpt_prompt = f"""Analyze the following transcription and music info:
 
 Transcription: {transcription}
@@ -123,28 +140,26 @@ Predicted Action: {most_common_action}
 """
 
         logging.info("Sending prompt to ChatGPT.")
-        logging.info(f"ChatGPT Prompt:\n{chatgpt_prompt}")
-
-        chat_response = openai.chat.completions.create(
+        chat_response = openai.ChatCompletion.create(
             model="gpt-4o",
             messages=[
-                {"role": "system", "content": "You are an expert video and music analyst, you gotta analyze the prompt and predict the virality of this video based of several factors and then give feedback on improvements that could be made."},
-                {"role": "user", "content": chatgpt_prompt}
+                {
+                    "role": "system",
+                    "content": "You are an expert video and music analyst. Analyze the prompt and predict the virality of this video based on several factors, then offer improvements."
+                },
+                {"role": "user", "content": chatgpt_prompt},
             ],
             max_tokens=500
         )
-        # !FIX: Use chat_response, not chatgpt_response, and use the new API's message format
         chatgpt_text = chat_response.choices[0].message.content.strip()
-        logging.info("ChatGPT response generated.")
-        logging.info(f"ChatGPT Response: {chatgpt_text}")  # Log ChatGPT response to the terminal
+        logging.info(f"ChatGPT Response: {chatgpt_text}")
 
         today = datetime.now().strftime("%Y-%m-%d")
         new_id = str(uuid.uuid4())
-        current_datetime = datetime.now().isoformat()
 
         insert_analysis(new_id, user_id, f"Analysis {today}", today, chatgpt_text, video.filename)
+        logging.info(f"Inserted analysis ID {new_id} for user {user_id}")
 
-        # Return the required response format
         return {
             "id": new_id,
             "title": f"Analysis {today}",
@@ -163,10 +178,13 @@ Predicted Action: {most_common_action}
     finally:
         if os.path.exists(temp_video_path):
             os.remove(temp_video_path)
+            logging.info(f"Removed temporary video: {temp_video_path}")
         if os.path.exists(temp_audio_path):
             os.remove(temp_audio_path)
+            logging.info(f"Removed temporary audio: {temp_audio_path}")
 
 def extract_frames(video_path, frame_interval=30):
+    logging.info("extract_frames function called.")
     frames = []
     cap = cv2.VideoCapture(video_path)
     frame_count = 0
@@ -181,4 +199,5 @@ def extract_frames(video_path, frame_interval=30):
         frame_count += 1
 
     cap.release()
+    logging.info("Frames extraction complete.")
     return frames
