@@ -110,9 +110,21 @@ if __name__ == "__main__":
     model, preprocess = clip.load("ViT-B/32", device=device)
 
     # Define consistent class names from the intersection of train and val
-    train_classes = set(os.listdir(train_dir))
-    val_classes = set(os.listdir(val_dir))
-    class_names = sorted(list(train_classes & val_classes))  # Only use classes present in both
+    train_classes = set([d for d in os.listdir(train_dir) if os.path.isdir(os.path.join(train_dir, d)) and not d.startswith('.')])
+    val_classes = set([d for d in os.listdir(val_dir) if os.path.isdir(os.path.join(val_dir, d)) and not d.startswith('.')])
+
+    print("Train classes:", train_classes)
+    print("Validation classes:", val_classes)
+
+    # Debugging: Check for common classes
+    common_classes = train_classes.intersection(val_classes)
+    if not common_classes:
+        raise ValueError(
+            f"No common classes found between train and val sets! "
+            f"Train classes: {train_classes}, Validation classes: {val_classes}"
+        )
+
+    class_names = sorted(list(common_classes))  # Only use classes present in both
 
     assert len(class_names) > 0, "No common classes found between train and val sets!"
 
