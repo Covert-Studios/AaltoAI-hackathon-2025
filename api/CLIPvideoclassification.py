@@ -116,7 +116,15 @@ if __name__ == "__main__":
     print("Train classes:", train_classes)
     print("Validation classes:", val_classes)
 
-    class_names = sorted(list(train_classes & val_classes))  # Only use classes present in both
+    # Debugging: Check for common classes
+    common_classes = train_classes.intersection(val_classes)
+    if not common_classes:
+        raise ValueError(
+            f"No common classes found between train and val sets! "
+            f"Train classes: {train_classes}, Validation classes: {val_classes}"
+        )
+
+    class_names = sorted(list(common_classes))  # Only use classes present in both
 
     assert len(class_names) > 0, "No common classes found between train and val sets!"
 
