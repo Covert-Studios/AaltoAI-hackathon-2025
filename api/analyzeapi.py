@@ -10,6 +10,7 @@ from PIL import Image
 import cv2  # For frame extraction
 import openai
 import logging  # Import logging module
+import tempfile
 
 from analyze_db import insert_analysis, get_analyses_for_user, get_analysis_detail
 from clerk_auth import get_current_user_id
@@ -47,7 +48,8 @@ async def analyze_video(
     user_id: str = Depends(get_current_user_id),
     frame_interval: int = 30  # Allow frame interval to be configurable
 ):
-    temp_video_path = f"/tmp/{uuid.uuid4()}.mp4"
+    temp_dir = tempfile.gettempdir()
+    temp_video_path = os.path.join(temp_dir, f"{uuid.uuid4()}.mp4")
     try:
         # Save the uploaded video
         logging.info("Saving the uploaded video to a temporary file.")
@@ -84,6 +86,14 @@ async def analyze_video(
         if os.path.exists(temp_video_path):
             logging.info(f"Cleaning up temporary file: {temp_video_path}.")
             os.remove(temp_video_path)
+        
+        return {
+            "id": new_id,
+            "title": f"Analysis {today}",
+            "date": today,
+            "result": result,
+            "video_filename": video.filename
+        }
 
 def extract_frames(video_path, frame_interval=30):
     """
