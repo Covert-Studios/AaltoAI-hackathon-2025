@@ -12,13 +12,16 @@ import openai
 
 from analyze_db import insert_analysis, get_analyses_for_user, get_analysis_detail
 from clerk_auth import get_current_user_id
+from my_clip_model import MyCLIPModel  # Import your model class
 
 router = APIRouter()
 
 # Load the fine-tuned CLIP model globally
-clip_model_path = "models/fine_tuned_clip.ph"
+clip_model_path = "../fine_tuned_clip.pth"
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-clip_model = torch.load(clip_model_path, map_location=device)
+clip_model = MyCLIPModel()  # Instantiate the model
+clip_model.load_state_dict(torch.load(clip_model_path, map_location=device))
+clip_model.to(device)
 clip_model.eval()
 
 # Define preprocessing for CLIP
