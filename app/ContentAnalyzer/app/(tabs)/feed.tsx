@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react'
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Modal } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Modal, ActivityIndicator } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { Navbar } from '../components/Navbar'
 import { useRouter } from 'expo-router'
 import { useAuth } from '@clerk/clerk-expo'
 
-const API_BASE_URL = 'http://192.168.82.141:8000'
+const API_BASE_URL = 'http://192.168.82.141:8000' // Prob change for production
 
 // Example categories for the feed
 const CATEGORIES = ['All', 'Tech', 'Science', 'Art', 'Sports']
@@ -14,6 +14,7 @@ export default function FeedScreen() {
   const router = useRouter()
   const { isSignedIn, isLoaded, getToken } = useAuth()
   const [selectedCategory, setSelectedCategory] = useState('All')
+  const [loading, setLoading] = useState(false)
   type FeedItem = {
     id: number
     category: string
@@ -37,6 +38,7 @@ export default function FeedScreen() {
 
   const fetchFeed = async () => {
     try {
+      setLoading(true)
       const token = await getToken()
       const res = await fetch(`${API_BASE_URL}/trends`, {
         headers: {
@@ -49,6 +51,8 @@ export default function FeedScreen() {
       setFeedItems(data)
     } catch (e) {
       setFeedItems([])
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -92,25 +96,31 @@ export default function FeedScreen() {
           ))}
         </ScrollView>
       </View>
-      <ScrollView contentContainerStyle={styles.content}>
-        {filteredItems.map(item => (
-          <TouchableOpacity
-            key={item.id}
-            style={styles.feedBlock}
-            onPress={() => setSelectedItem(item)}
-            activeOpacity={0.8}
-          >
-            <Image source={{ uri: item.image }} style={styles.feedImage} />
-            <View style={styles.feedTextContainer}>
-              <Text style={styles.feedTitle}>{item.title}</Text>
-              <Text style={styles.feedSummary}>{item.summary}</Text>
-            </View>
-          </TouchableOpacity>
-        ))}
-        {filteredItems.length === 0 && (
-          <Text style={styles.noItemsText}>No items in this category.</Text>
-        )}
-      </ScrollView>
+      {loading ? (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 40 }}>
+          <ActivityIndicator size="large" color="#0a7ea4" />
+        </View>
+      ) : (
+        <ScrollView contentContainerStyle={styles.content}>
+          {filteredItems.map(item => (
+            <TouchableOpacity
+              key={item.id}
+              style={styles.feedBlock}
+              onPress={() => setSelectedItem(item)}
+              activeOpacity={0.8}
+            >
+              <Image source={{ uri: item.image }} style={styles.feedImage} />
+              <View style={styles.feedTextContainer}>
+                <Text style={styles.feedTitle}>{item.title}</Text>
+                <Text style={styles.feedSummary}>{item.summary}</Text>
+              </View>
+            </TouchableOpacity>
+          ))}
+          {filteredItems.length === 0 && !loading && (
+            <Text style={styles.noItemsText}>No items in this category.</Text>
+          )}
+        </ScrollView>
+      )}
       <Navbar onTabPress={handleTabPress} activeTab="Feed" />
 
       <Modal
