@@ -97,6 +97,7 @@ async def analyze_video(
         # Generate ChatGPT response
         logging.info("Generating ChatGPT response.")
         chatgpt_prompt = f"Analyze the following transcription and music info:\n\nTranscription: {transcription}\n\nMusic Info: {music_info}"
+        logging.info(f"ChatGPT Prompt: {chatgpt_prompt}")  # Log the prompt in the terminal
         chatgpt_response = openai.Completion.create(
             engine="text-davinci-003",
             prompt=chatgpt_prompt,
@@ -104,7 +105,7 @@ async def analyze_video(
         )
         chatgpt_text = chatgpt_response.choices[0].text.strip()
         logging.info("ChatGPT response generated.")
-        logging.info(f"ChatGPT Response: {chatgpt_text}")  # Print ChatGPT response to the terminal
+        logging.info(f"ChatGPT Response: {chatgpt_text}")  # Log ChatGPT response to the terminal
 
         # Get the current date and time
         current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
