@@ -1,44 +1,48 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from clerk_auth import get_current_user_id 
+import openai
+import os
+import json
+import logging
 
 router = APIRouter()
 
+LOAD_COUNT = 5
+
+def fetch_trends_from_gpt():
+    client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    prompt = (
+        f"List {LOAD_COUNT} current trending topics in the world right now. "
+        "For each, provide: category (Tech, Science, Art, Sports, etc.), "
+        "title, summary, and a short detail. Respond ONLY with a valid JSON array with keys: "
+        "id, category, title, summary, details. No explanation or extra text. Example:\n"
+        '[{"id": 1, "category": "Tech", "title": "...", "summary": "...", "details": "..."}, ...]'
+    )
+    try:
+        logging.info("Sending prompt to OpenAI: %s", prompt)
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=600,
+            temperature=0.7,
+        )
+        content = response.choices[0].message.content.strip()
+        logging.info("GPT response: %s", content)
+        if content.startswith("```"):
+            content = content.split('\n', 1)[1]
+            if content.endswith("```"):
+                content = content.rsplit('\n', 1)[0]
+        try:
+            trends = json.loads(content)
+        except json.JSONDecodeError as jde:
+            logging.error("JSON decode error: %s", jde)
+            logging.error("Raw GPT response: %s", content)
+            raise HTTPException(status_code=500, detail=f"Invalid JSON from GPT: {content}")
+        return trends
+    except Exception as e:
+        logging.exception("Failed to fetch trends from GPT")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch trends: {e}")
+
 @router.get("/trends")
 def get_trends(user_id: str = Depends(get_current_user_id)):
-    """
-    DUMMY DATA FOR TRENDS API
-    """ 
-    return [
-        {
-            "id": 1,
-            "category": "Tech",
-            "title": "AI Revolutionizes Coding",
-            "image": "https://images.unsplash.com/photo-1519389950473-47ba0277781c",
-            "summary": "AI tools are changing how developers write code.",
-            "details": "AI-powered code assistants are making development faster and more efficient by providing real-time suggestions and automating repetitive tasks.",
-        },
-        {
-            "id": 2,
-            "category": "Science",
-            "title": "New Planet Discovered",
-            "image": "https://images.unsplash.com/photo-1465101046530-73398c7f28ca",
-            "summary": "Astronomers have found a new Earth-like planet.",
-            "details": "The planet, located in the habitable zone, could potentially support life. Scientists are excited about future research opportunities.",
-        },
-        {
-            "id": 3,
-            "category": "Art",
-            "title": "Modern Art Exhibition",
-            "image": "https://images.unsplash.com/photo-1506744038136-46273834b3fb",
-            "summary": "A new exhibition showcases modern art from around the world.",
-            "details": "The exhibition features works from over 50 artists and explores themes of identity, technology, and society.",
-        },
-        {
-            "id": 4,
-            "category": "Sports",
-            "title": "Championship Finals",
-            "image": "https://images.unsplash.com/photo-1517649763962-0c623066013b",
-            "summary": "The finals were full of surprises and upsets.",
-            "details": "Fans witnessed an intense battle as underdogs took the lead and secured a historic victory.",
-        },
-    ]
+    return fetch_trends_from_gpt()
