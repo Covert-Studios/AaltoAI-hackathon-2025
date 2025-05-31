@@ -33,7 +33,6 @@ def get_analyze_detail(analysis_id: str):
 
 @router.post("/analyze")
 async def analyze_video(video: UploadFile = File(...)):
-    # Dummy: pretend to analyze and add to history
     new_id = str(uuid.uuid4())
     new_analysis = {
         "id": new_id,
