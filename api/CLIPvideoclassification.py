@@ -9,15 +9,17 @@ from torch.utils.data import DataLoader, Dataset
 
 # Custom dataset for loading frames
 class FrameDataset(Dataset):
-    def __init__(self, data_dir, preprocess):
+    def __init__(self, data_dir, preprocess, class_names):
         self.data_dir = data_dir
         self.preprocess = preprocess
         self.samples = []
-        self.classes = sorted(os.listdir(data_dir))
+        self.classes = class_names
         self.class_to_idx = {cls_name: idx for idx, cls_name in enumerate(self.classes)}
 
         for cls_name in self.classes:
             cls_path = os.path.join(data_dir, cls_name)
+            if not os.path.exists(cls_path):
+                continue  # Skip missing classes
             for root, _, files in os.walk(cls_path):  # Recursively traverse directories
                 for file in files:
                     if file.endswith(('.jpg', '.jpeg', '.png')):  # Filter image files
@@ -75,8 +77,7 @@ def validate_clip(model, dataloader, loss_fn, device, class_texts):
         for images, labels in tqdm(dataloader, desc="Validating"):
             images, labels = images.to(device), labels.to(device)
 
-            # Debugging: Print labels and their range
-            print(f"Labels: {labels}")
+            # Debugging: Check for label validity
             if labels.max() >= len(class_texts) or labels.min() < 0:
                 raise ValueError(f"Invalid label detected. Labels must be in the range [0, {len(class_texts) - 1}].")
 
@@ -85,9 +86,6 @@ def validate_clip(model, dataloader, loss_fn, device, class_texts):
 
             # Compute logits
             logits_per_image = (image_features @ text_features.T)
-
-            # Debugging: Check logits shape
-            print(f"Logits shape: {logits_per_image.shape}, Labels shape: {labels.shape}")
 
             # Compute loss
             loss = loss_fn(logits_per_image, labels)
@@ -111,9 +109,18 @@ if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model, preprocess = clip.load("ViT-B/32", device=device)
 
+    # Define consistent class names from the intersection of train and val
+    train_classes = set(os.listdir(train_dir))
+    val_classes = set(os.listdir(val_dir))
+    class_names = sorted(list(train_classes & val_classes))  # Only use classes present in both
+
+    assert len(class_names) > 0, "No common classes found between train and val sets!"
+
+    print("Using classes:", class_names)
+
     # Prepare datasets and dataloaders
-    train_dataset = FrameDataset(train_dir, preprocess)
-    val_dataset = FrameDataset(val_dir, preprocess)
+    train_dataset = FrameDataset(train_dir, preprocess, class_names)
+    val_dataset = FrameDataset(val_dir, preprocess, class_names)
     train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False)
 
@@ -121,13 +128,10 @@ if __name__ == "__main__":
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-5)
     loss_fn = torch.nn.CrossEntropyLoss()
 
-    # Define class names
-    class_names = sorted(os.listdir(train_dir))  # Assumes class names are folder names
-
     # Training loop
     epochs = 5
     for epoch in range(epochs):
-        print(f"Epoch {epoch + 1}/{epochs}")
+        print(f"\nEpoch {epoch + 1}/{epochs}")
         train_loss = train_clip(model, train_loader, optimizer, loss_fn, device, class_names)
         val_loss, val_accuracy = validate_clip(model, val_loader, loss_fn, device, class_names)
         print(f"Train Loss: {train_loss:.4f}, Val Loss: {val_loss:.4f}, Val Accuracy: {val_accuracy:.4f}")
