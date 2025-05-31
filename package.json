@@ -1,5 +1,6 @@
 {
   "dependencies": {
-    "dotenv": "^16.5.0"
+    "dotenv": "^16.5.0",
+    "react-native-chart-kit": "^6.12.0"
   }
 }
