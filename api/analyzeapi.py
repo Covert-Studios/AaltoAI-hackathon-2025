@@ -12,26 +12,33 @@ import ffmpeg
 from shazamio import Shazam
 import whisper
 from datetime import datetime
+import clip
 import json  # Add this at the top with other imports
 
 from analyze_db import insert_analysis, get_analyses_for_user, get_analysis_detail
 from clerk_auth import get_current_user_id
-import clip
 
 router = APIRouter()
 
-# Load the CLIP model and preprocessing pipeline
+# Load CLIP model
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 clip_model, preprocess = clip.load("ViT-B/32", device=device)
 clip_model.load_state_dict(torch.load("../fine_tuned_clip.pth", map_location=device))
 clip_model.to(device)
 clip_model.eval()
 
-# Load OpenAI API key from environment variables
+# Set up OpenAI API
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-# Configure logging
+# Set up logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+
+# Your class names from training (UCF-101 example)
+class_names = [
+    "ApplyEyeMakeup", "Archery", "BabyCrawling", "BalanceBeam", "BandMarching",  # Extend with all your used classes
+    "Basketball", "BenchPress", "Biking", "Billiards", "BlowDryHair",
+    "BodyWeightSquats", "Bowling", "BoxingPunchingBag", "BreastStroke", "BrushingTeeth"
+]
 
 @router.get("/analyze/history")
 def get_analyze_history(user_id: str = Depends(get_current_user_id)):
@@ -48,84 +55,92 @@ def get_analyze_detail_endpoint(analysis_id: str, user_id: str = Depends(get_cur
 async def analyze_video(
     video: UploadFile = File(...),
     user_id: str = Depends(get_current_user_id),
-    frame_interval: int = 30  # Allow frame interval to be configurable
+    frame_interval: int = 30
 ):
     temp_dir = tempfile.gettempdir()
     temp_video_path = os.path.join(temp_dir, f"{uuid.uuid4()}.mp4")
     temp_audio_path = os.path.join(temp_dir, f"{uuid.uuid4()}.mp3")
+
     try:
-        # Save the uploaded video
-        logging.info("Saving the uploaded video to a temporary file.")
+        # Save uploaded video
+        logging.info("Saving uploaded video.")
         with open(temp_video_path, "wb") as f:
             f.write(await video.read())
-        logging.info(f"Video saved to {temp_video_path}.")
+        logging.info(f"Video saved to {temp_video_path}")
 
-        # Extract frames from the video
-        logging.info(f"Extracting frames from the video with frame_interval={frame_interval}.")
-        frames = extract_frames(temp_video_path, frame_interval=frame_interval)
-        logging.info(f"Extracted {len(frames)} frames from the video.")
+        # Extract frames
+        logging.info(f"Extracting frames every {frame_interval} frames.")
+        frames = extract_frames(temp_video_path, frame_interval)
+        logging.info(f"Extracted {len(frames)} frames.")
 
-        # Process frames with CLIP
-        logging.info("Processing frames with the CLIP model.")
-        frame_results = []
-        for i, frame in enumerate(frames):
-            logging.debug(f"Processing frame {i + 1}/{len(frames)}.")
-            image = preprocess(frame).unsqueeze(0).to(device)  # Preprocess and add batch dimension
-            with torch.no_grad():
-                image_features = clip_model.encode_image(image)
-            frame_results.append(image_features.cpu().numpy().tolist())  # Convert to list for JSON serialization
+        # Classify frames using CLIP
+        logging.info("Classifying frames with CLIP model.")
+        class_votes = []
 
-        # Extract audio from the video
-        logging.info("Extracting audio from the video.")
-        ffmpeg.input(temp_video_path).output(temp_audio_path).run(overwrite_output=True)
-        logging.info(f"Audio extracted to {temp_audio_path}.")
+        with torch.no_grad():
+            text_inputs = torch.cat([clip.tokenize(f"a photo of a person doing {c}") for c in class_names]).to(device)
+            text_features = clip_model.encode_text(text_inputs)
 
-        # Transcribe audio with Whisper
+            for i, frame in enumerate(frames):
+                image_input = preprocess(frame).unsqueeze(0).to(device)
+                image_features = clip_model.encode_image(image_input)
+                logits = (image_features @ text_features.T).softmax(dim=-1)
+                top_class = logits.argmax().item()
+                class_votes.append(class_names[top_class])
+
+        # Determine most common class
+        most_common_action = max(set(class_votes), key=class_votes.count)
+        logging.info(f"Predicted action: {most_common_action}")
+
+        # Extract audio from video
+        logging.info("Extracting audio.")
+        ffmpeg.input(temp_video_path).output(temp_audio_path).run(overwrite_output=True, quiet=True)
+        logging.info(f"Audio saved to {temp_audio_path}")
+
+        # Transcribe with Whisper
         logging.info("Transcribing audio with Whisper.")
         whisper_model = whisper.load_model("base")
         transcription_result = whisper_model.transcribe(temp_audio_path)
         transcription = transcription_result.get("text", "")
-        logging.info("Audio transcription completed.")
+        logging.info("Transcription complete.")
 
         # Recognize music with Shazamio
-        logging.info("Recognizing music with Shazamio.")
+        logging.info("Recognizing music.")
         shazam = Shazam()
         shazam_result = await shazam.recognize(temp_audio_path)
         music_info = shazam_result.get("track", {})
-        logging.info("Music recognition completed.")
+        logging.info("Music recognition complete.")
 
-        # Generate ChatGPT response
-        logging.info("Generating ChatGPT response.")
-        chatgpt_prompt = f"Analyze the following transcription and music info:\n\nTranscription: {transcription}\n\nMusic Info: {music_info}"
-        logging.info(f"ChatGPT Prompt: {chatgpt_prompt}")  # Log the prompt in the terminal
-        chatgpt_response = openai.chat.completions.create(
-            model="gpt-3.5-turbo",
+        # Prepare ChatGPT prompt
+        logging.info("Preparing ChatGPT prompt.")  
+        chatgpt_prompt = f"""Analyze the following transcription and music info:
+
+Transcription: {transcription}
+
+Music Info: {music_info}
+
+Predicted Action: {most_common_action}
+"""
+
+        logging.info("Sending prompt to ChatGPT.")
+        logging.info(f"ChatGPT Prompt:\n{chatgpt_prompt}")
+
+        chat_response = openai.chat.completions.create(
+            model="gpt-4o",
             messages=[
-                {"role": "system", "content": "You are an expert video and music analyst."},
+                {"role": "system", "content": "You are an expert video and music analyst, you gotta analyze the prompt and predict the virality of this video based of several factors and then give feedback on improvements that could be made."},
                 {"role": "user", "content": chatgpt_prompt}
             ],
             max_tokens=500
         )
-        chatgpt_text = chatgpt_response.choices[0].message.content.strip()
+        chatgpt_text = chatgpt_response.choices[0].text.strip()
         logging.info("ChatGPT response generated.")
         logging.info(f"ChatGPT Response: {chatgpt_text}")  # Log ChatGPT response to the terminal
 
-        # Get the current date and time
         today = datetime.now().strftime("%Y-%m-%d")
         new_id = str(uuid.uuid4())
         current_datetime = datetime.now().isoformat()
 
-        """
-        # Build the result dictionary
-        result = {
-            "date_time": current_datetime,
-            "frames": {"features": frame_results, "frame_count": len(frames)},
-            "transcription": transcription,
-            "music_info": music_info,
-            "chatgpt_response": chatgpt_text,
-        }
-        """
-        # Insert analysis into the database
         insert_analysis(new_id, user_id, f"Analysis {today}", today, chatgpt_text, video.filename)
 
         # Return the required response format
@@ -134,42 +149,35 @@ async def analyze_video(
             "title": f"Analysis {today}",
             "date": today,
             "result": chatgpt_text,
-            "video_filename": video.filename
+            "video_filename": video.filename,
+            "predicted_action": most_common_action,
+            "transcription": transcription,
+            "music_info": music_info,
         }
 
     except Exception as e:
-        logging.error(f"Error occurred during video analysis: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to analyze video: {str(e)}")
+        logging.error(f"Analysis failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
     finally:
-        # Clean up temporary files
         if os.path.exists(temp_video_path):
-            logging.info(f"Cleaning up temporary video file: {temp_video_path}.")
             os.remove(temp_video_path)
         if os.path.exists(temp_audio_path):
-            logging.info(f"Cleaning up temporary audio file: {temp_audio_path}.")
             os.remove(temp_audio_path)
 
 def extract_frames(video_path, frame_interval=30):
-    """
-    Extract frames from the video at the specified interval.
-    Args:
-        video_path (str): Path to the video file.
-        frame_interval (int): Interval between frames to extract.
-    Returns:
-        List[PIL.Image]: List of extracted frames as PIL Images.
-    """
     frames = []
-    video = cv2.VideoCapture(video_path)
+    cap = cv2.VideoCapture(video_path)
     frame_count = 0
-    success, image = video.read()
+    success, image = cap.read()
 
     while success:
         if frame_count % frame_interval == 0:
-            frame = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            frames.append(Image.fromarray(frame))
-        success, image = video.read()
+            rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            pil_image = Image.fromarray(rgb_image)
+            frames.append(pil_image)
+        success, image = cap.read()
         frame_count += 1
 
-    video.release()
+    cap.release()
     return frames
