@@ -2,6 +2,8 @@ from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Request
 import uuid
 import datetime
 import os
+import shazamioapi
+import whisperstuff
 
 from analyze_db import insert_analysis, get_analyses_for_user, get_analysis_detail
 from clerk_auth import get_current_user_id
@@ -24,18 +26,35 @@ async def analyze_video(
     video: UploadFile = File(...),
     user_id: str = Depends(get_current_user_id)
 ):
-    # Save the uploaded video to disk
-    save_dir = "videos"
-    os.makedirs(save_dir, exist_ok=True)
-    file_location = os.path.join(save_dir, video.filename)
-    with open(file_location, "wb") as buffer:
-        buffer.write(await video.read())
+    # Save the uploaded video to a temporary file
+    video_path = f"temp/{uuid.uuid4()}_{video.filename}"
+    os.makedirs("temp", exist_ok=True)
+    with open(video_path, "wb") as f:
+        f.write(await video.read())
 
-    new_id = str(uuid.uuid4())
+    try:
+        # Analyze the audio using Shazam
+        shazam_result = await shazamioapi.recognize_audio_from_video(video_path)
+
+        # Analyze the audio using Whisper
+        whisper_result = whisperstuff.whisper_transcribe(video_path)
+
+        # Combine results
+        result = {
+            "shazam": shazam_result,
+            "whisper": whisper_result,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error analyzing video: {str(e)}")
+    finally:
+        # Clean up the temporary file
+        os.remove(video_path)
+
+    # Insert the analysis into the database
     today = datetime.date.today().isoformat()
-    result = f"Saved uploaded video as: {file_location}"
-
+    new_id = str(uuid.uuid4())
     insert_analysis(new_id, user_id, f"Analysis {today}", today, result, video.filename)
+
     return {
         "id": new_id,
         "title": f"Analysis {today}",

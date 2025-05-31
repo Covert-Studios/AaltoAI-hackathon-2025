@@ -1,25 +1,37 @@
 import ssl
 import aiohttp
-import asyncio
 from shazamio import Shazam
 
-async def main():
-    # Correct the file path by adding the leading "/"
-    path_to_audio = "/Users/otsoreijonen/Downloads/Rarin - YESSIR! (Official Visualizer).mp3"
+# Bypass SSL verification (not recommended for production)
+ssl._create_default_https_context = ssl._create_unverified_context
+
+async def recognize_audio_from_video(audio_path: str) -> dict:
+    """
+    Recognizes music in the given audio file using Shazam.
     
-    # Initialize Shazam
+    Args:
+        audio_path (str): Path to the audio file.
+    
+    Returns:
+        dict: Recognition result from Shazam.
+    """
     shazam = Shazam()
-    
-    # Recognize the audio file
-    out = await shazam.recognize(path_to_audio)
-    print(out)
+    result = await shazam.recognize(audio_path)
+    return result
 
-async def test_ssl():
-    url = "https://amp.shazam.com"
-    ssl_context = ssl.create_default_context()
-    async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=ssl_context)) as session:
-        async with session.get(url) as response:
-            print(response.status)
+# Example usage for testing
+if __name__ == "__main__":
+    import asyncio
 
-loop = asyncio.get_event_loop()
-loop.run_until_complete(main())
+    async def main():
+        # Replace with the path to your audio file
+        path_to_audio = "/Users/otsoreijonen/Downloads/Rarin - YESSIR! (Official Visualizer).mp3"
+        
+        # Recognize the audio file
+        try:
+            out = await recognize_audio_from_video(path_to_audio)
+            print(out)
+        except Exception as e:
+            print(f"Error: {e}")
+
+    asyncio.run(main())
