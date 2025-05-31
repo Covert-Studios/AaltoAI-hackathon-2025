@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react'
-import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Alert, TouchableOpacity, Modal, TextInput } from 'react-native'
+import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Alert, TouchableOpacity, Modal, TextInput, Easing } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useRouter, useLocalSearchParams } from 'expo-router'
 import { useAuth } from '@clerk/clerk-expo'
 import Markdown from 'react-native-markdown-display';
+import { AnimatedCircularProgress } from 'react-native-circular-progress';
 
 const API_BASE_URL = 'http://192.168.82.141:8000' // Prob change for production
 
@@ -98,9 +99,41 @@ export default function AnalyzeDetailScreen() {
       </TouchableOpacity>
 
       <Ionicons name="analytics-outline" size={48} color="#0a7ea4" style={{ marginBottom: 16, marginTop: 32 }} />
+      
       <Text style={styles.title}>{detail.title}</Text>
       <Text style={styles.date}>{detail.date}</Text>
       <Text style={{ color: '#888', fontSize: 14, marginBottom: 8 }}>ID: {detail.id}</Text>
+
+      <View style={{ alignItems: 'center', marginBottom: 28 }}>
+        <AnimatedCircularProgress
+          size={100}
+          width={12}
+          fill={typeof detail.score === 'number' ? detail.score : 0}
+          tintColor={
+            detail.score >= 80
+              ? '#4caf50'
+              : detail.score >= 50
+              ? '#ffc107'
+              : '#f44336'
+          }
+          backgroundColor="#eee"
+          rotation={225}
+          arcSweepAngle={270}
+          lineCap="round"
+          duration={1800}
+          easing={Easing.out(Easing.cubic)}
+        >
+          {(fill: number) => (
+            <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#0a7ea4' }}>
+              {`${Math.round(fill)}%`}
+            </Text>
+          )}
+        </AnimatedCircularProgress>
+        <Text style={{ color: '#888', fontSize: 15, marginTop: 6, fontWeight: '600' }}>
+          Score
+        </Text>
+      </View>
+
       <View style={styles.result}>
         <Markdown
           style={{
