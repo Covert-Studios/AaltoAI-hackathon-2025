@@ -56,13 +56,13 @@ python app/main.py --input path/to/video.mp4
    Execute the pipeline using:
 
    ```bash
-   python app/main.py --input data/sample_video.mp4
+   python api/api.py 
    ```
-
-5. **Check Output**  
-   Outputs such as transcripts, analysis reports, and visual summaries will be saved in the `data/` or `outputs/` directory.
-
----
+5. **Start Expo**
+   Navigate to the Content Analyzer Folder
+   ```bash
+   npx expo start
+   ```
 
 ## 🔍 Features
 
