@@ -16,7 +16,7 @@ pip-wheel-metadata/
 dist/
 build/
 
-.pth
+fine_tuned_clip.pth
 data
 # Jupyter Notebook checkpoints
 .ipynb_checkpoints/
