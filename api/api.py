@@ -18,14 +18,9 @@ def require_api_key(func):
     return wrapper
 
 def get_video(video):
-    # get the users video 
-
-
-@app.route('/date', methods=['GET'])
-@require_api_key
-def get_date():
-    result = subprocess.check_output(['date']).decode('utf-8')
-    return jsonify({'date': result.strip()})
+    # Example: Process the video file
+    print(f"Processing video: {video}")
+    return {"message": "Video processed successfully"}
 
 @app.route('/cal', methods=['GET'])
 @require_api_key
