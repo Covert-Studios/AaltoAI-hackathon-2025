@@ -61,6 +61,7 @@ def validate_clip(model, dataloader, loss_fn, device):
     accuracy = correct / total
     return total_loss / len(dataloader), accuracy
 
+
 if __name__ == "__main__":
     # Paths
     train_dir = "data/UCF101_frames/train"  # Path to training frames
