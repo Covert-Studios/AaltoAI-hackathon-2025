@@ -12,6 +12,7 @@ import ffmpeg
 from shazamio import Shazam
 import whisper
 from datetime import datetime
+import json  # Add this at the top with other imports
 
 from analyze_db import insert_analysis, get_analyses_for_user, get_analysis_detail
 from clerk_auth import get_current_user_id
@@ -89,7 +90,7 @@ async def analyze_video(
         # Recognize music with Shazamio
         logging.info("Recognizing music with Shazamio.")
         shazam = Shazam()
-        shazam_result = await shazam.recognize_song(temp_audio_path)
+        shazam_result = await shazam.recognize(temp_audio_path)
         music_info = shazam_result.get("track", {})
         logging.info("Music recognition completed.")
 
@@ -97,25 +98,43 @@ async def analyze_video(
         logging.info("Generating ChatGPT response.")
         chatgpt_prompt = f"Analyze the following transcription and music info:\n\nTranscription: {transcription}\n\nMusic Info: {music_info}"
         logging.info(f"ChatGPT Prompt: {chatgpt_prompt}")  # Log the prompt in the terminal
-        chatgpt_response = openai.Completion.create(
-            engine="text-davinci-003",
-            prompt=chatgpt_prompt,
+        chatgpt_response = openai.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "You are an expert video and music analyst."},
+                {"role": "user", "content": chatgpt_prompt}
+            ],
             max_tokens=500
         )
-        chatgpt_text = chatgpt_response.choices[0].text.strip()
+        chatgpt_text = chatgpt_response.choices[0].message.content.strip()
         logging.info("ChatGPT response generated.")
         logging.info(f"ChatGPT Response: {chatgpt_text}")  # Log ChatGPT response to the terminal
 
         # Get the current date and time
-        current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        today = datetime.now().strftime("%Y-%m-%d")
+        new_id = str(uuid.uuid4())
+        current_datetime = datetime.now().isoformat()
 
-        # Return structured results
-        return {
+        """
+        # Build the result dictionary
+        result = {
             "date_time": current_datetime,
             "frames": {"features": frame_results, "frame_count": len(frames)},
             "transcription": transcription,
             "music_info": music_info,
             "chatgpt_response": chatgpt_text,
+        }
+        """
+        # Insert analysis into the database
+        insert_analysis(new_id, user_id, f"Analysis {today}", today, chatgpt_text, video.filename)
+
+        # Return the required response format
+        return {
+            "id": new_id,
+            "title": f"Analysis {today}",
+            "date": today,
+            "result": chatgpt_text,
+            "video_filename": video.filename
         }
 
     except Exception as e:
