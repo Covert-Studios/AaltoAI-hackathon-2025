@@ -75,11 +75,19 @@ def validate_clip(model, dataloader, loss_fn, device, class_texts):
         for images, labels in tqdm(dataloader, desc="Validating"):
             images, labels = images.to(device), labels.to(device)
 
+            # Debugging: Print labels and their range
+            print(f"Labels: {labels}")
+            if labels.max() >= len(class_texts) or labels.min() < 0:
+                raise ValueError(f"Invalid label detected. Labels must be in the range [0, {len(class_texts) - 1}].")
+
             # Encode images
             image_features = model.encode_image(images)
 
             # Compute logits
             logits_per_image = (image_features @ text_features.T)
+
+            # Debugging: Check logits shape
+            print(f"Logits shape: {logits_per_image.shape}, Labels shape: {labels.shape}")
 
             # Compute loss
             loss = loss_fn(logits_per_image, labels)
