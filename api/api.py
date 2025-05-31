@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from trendsapi import router as trends_router
 from analyzeapi import router as analyze_router
+from analyze_db import router as analyze_db_router
 
 app = FastAPI()
 
@@ -17,6 +18,7 @@ app.add_middleware(
 # Include routers
 app.include_router(trends_router)
 app.include_router(analyze_router)
+app.include_router(analyze_db_router)
 
 if __name__ == "__main__":
     import uvicorn
