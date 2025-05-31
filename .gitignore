@@ -17,7 +17,10 @@ dist/
 build/
 
 fine_tuned_clip.pth
-data
+UCF-101
+UCF101_frames
+youtube_clips
+
 # Jupyter Notebook checkpoints
 .ipynb_checkpoints/
 
