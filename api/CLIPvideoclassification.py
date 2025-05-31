@@ -112,6 +112,10 @@ if __name__ == "__main__":
     # Define consistent class names from the intersection of train and val
     train_classes = set([d for d in os.listdir(train_dir) if os.path.isdir(os.path.join(train_dir, d)) and not d.startswith('.')])
     val_classes = set([d for d in os.listdir(val_dir) if os.path.isdir(os.path.join(val_dir, d)) and not d.startswith('.')])
+
+    print("Train classes:", train_classes)
+    print("Validation classes:", val_classes)
+
     class_names = sorted(list(train_classes & val_classes))  # Only use classes present in both
 
     assert len(class_names) > 0, "No common classes found between train and val sets!"
