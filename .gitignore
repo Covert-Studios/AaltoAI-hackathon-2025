@@ -5,7 +5,7 @@ frames
 __pycache__/
 *.py[cod]
 *$py.class
-
+.env
 # Virtual environments
 .venv/
 venv/

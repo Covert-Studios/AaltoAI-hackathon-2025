@@ -11,3 +11,5 @@ flask
 python-multipart
 uvicorn
 numpy
+whisper
+aiohttp
