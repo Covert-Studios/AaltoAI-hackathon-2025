@@ -17,11 +17,18 @@ dist/
 build/
 
 fine_tuned_clip.pth
-data
+UCF-101
+UCF101_frames
+youtube_clips
+
 # Jupyter Notebook checkpoints
 .ipynb_checkpoints/
 
 # PyInstaller
+
+
+frames
+prepared_frames
 *.spec
 
 # Unit test / coverage reports
