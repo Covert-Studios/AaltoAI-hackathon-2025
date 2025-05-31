@@ -1,8 +1,9 @@
+from fastapi import FastAPI
 from flask import Flask, jsonify, request, abort
 import subprocess
 import os
 
-app = Flask(__name__)
+app = FastAPI()
 
 # Predefined API key
 API_KEY = "prohackerschmacker6969"
@@ -60,6 +61,9 @@ def upload_video():
     video.save(video_path)
 
     return jsonify({"message": "Video uploaded successfully", "path": video_path}), 200
+
+app.include_router(trends_router)
+# ...include other routers as needed...
 
 if __name__ == '__main__':
     app.run()

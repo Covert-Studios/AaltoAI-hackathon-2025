@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Alert } from 're
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 
+const API_BASE_URL = 'http://127.0.1:8000/' // <-- Use your actual API base URL
+
 export default function AnalyzeDetailScreen() {
   const { id } = useLocalSearchParams()
   const router = useRouter()
@@ -17,19 +19,17 @@ export default function AnalyzeDetailScreen() {
   const fetchDetail = async () => {
     setLoading(true)
     try {
-      // TODO: Replace with your API call
-      // Example: const res = await fetch(`https://your-api/analyze/${id}`)
-      // const data = await res.json()
-      // setDetail(data)
-      // Mock data for now:
-      setDetail({
-        id,
-        title: `Analysis ${id}`,
-        date: new Date().toISOString().slice(0, 10),
-        result: 'PLACEHOLDER: Analysis result will be displayed here.',
+      const res = await fetch(`${API_BASE_URL}/analyze/${id}`, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
       })
+      if (!res.ok) throw new Error('Failed to fetch analysis details')
+      const data = await res.json()
+      setDetail(data)
     } catch (e) {
       Alert.alert('Error', 'Failed to fetch analysis details.')
+      setDetail(null)
     }
     setLoading(false)
   }
