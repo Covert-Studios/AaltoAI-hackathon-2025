@@ -4,6 +4,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
 import { Navbar } from '../components/Navbar'
 import { useRouter } from 'expo-router'
 import { useAuth } from '@clerk/clerk-expo'
+import { LineChart } from 'react-native-chart-kit'
 
 const API_BASE_URL = 'http://192.168.82.141:8000' // Prob change for production
 
@@ -17,7 +18,12 @@ export default function FeedScreen() {
   const [loading, setLoading] = useState(false)
   const [chatVisible, setChatVisible] = useState(false)
   const [chatInput, setChatInput] = useState('')
-  const [chatMessages, setChatMessages] = useState<{from: 'user'|'ai', text: string}[]>([])
+  type ChatMessage =
+    | { from: 'user'; text: string }
+    | { from: 'ai'; text: string }
+    | { from: 'ai-news'; news: { title: string; description: string }[] }
+
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
   const [chatLoading, setChatLoading] = useState(false)
 
   type FeedItem = {
@@ -30,6 +36,7 @@ export default function FeedScreen() {
   }
   const [feedItems, setFeedItems] = useState<FeedItem[]>([])
   const [selectedItem, setSelectedItem] = useState<FeedItem | null>(null)
+  const [trendData, setTrendData] = useState<number[]>([])
 
   useEffect(() => {
     if (isLoaded && !isSignedIn) {
@@ -69,7 +76,7 @@ export default function FeedScreen() {
 
   const sendChatMessage = async () => {
     if (!chatInput.trim()) return
-    const userMsg: { from: 'user' | 'ai'; text: string } = { from: 'user', text: chatInput }
+    const userMsg: { from: 'user', text: string } = { from: 'user', text: chatInput }
     setChatMessages(msgs => [...msgs, userMsg])
     setChatInput('')
     setChatLoading(true)
@@ -85,12 +92,44 @@ export default function FeedScreen() {
       })
       if (!res.ok) throw new Error('AI error')
       const data = await res.json()
-      // Assume data.reply is a string or array of news suggestions
-      setChatMessages(msgs => [...msgs, { from: 'ai', text: Array.isArray(data.reply) ? data.reply.join('\n\n') : data.reply }])
+      // Expect data.reply to be an array of {title, description}
+      if (Array.isArray(data.reply) && data.reply[0]?.title) {
+        setChatMessages(msgs => [
+          ...msgs,
+          { from: 'ai-news', news: data.reply }
+        ])
+      } else {
+        setChatMessages(msgs => [
+          ...msgs,
+          { from: 'ai', text: 'Sorry, I could not fetch news right now.' }
+        ])
+      }
     } catch (e) {
       setChatMessages(msgs => [...msgs, { from: 'ai', text: 'Sorry, I could not fetch news right now.' }])
     } finally {
       setChatLoading(false)
+    }
+  }
+
+  const handleFeedItemPress = async (item: FeedItem) => {
+    setSelectedItem(item)
+    // Fetch trend data for this item (simulate or call your backend)
+    try {
+      const token = await getToken()
+      const res = await fetch(`${API_BASE_URL}/trend-growth?id=${item.id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setTrendData(data.growth) // e.g., [10, 20, 30, 50, 80]
+      } else {
+        setTrendData([])
+      }
+    } catch {
+      setTrendData([])
     }
   }
 
@@ -138,7 +177,7 @@ export default function FeedScreen() {
             <TouchableOpacity
               key={item.id}
               style={styles.feedBlock}
-              onPress={() => setSelectedItem(item)}
+              onPress={() => handleFeedItemPress(item)}
               activeOpacity={0.8}
             >
               <Image source={{ uri: item.image }} style={styles.feedImage} />
@@ -175,17 +214,31 @@ export default function FeedScreen() {
           <View style={styles.chatModalContent}>
             <Text style={styles.chatTitle}>Ask AI for News Suggestions</Text>
             <ScrollView style={styles.chatMessages} contentContainerStyle={{paddingBottom: 16}}>
-              {chatMessages.map((msg, idx) => (
-                <View
-                  key={idx}
-                  style={[
-                    styles.chatBubble,
-                    msg.from === 'user' ? styles.chatBubbleUser : styles.chatBubbleAI,
-                  ]}
-                >
-                  <Text style={styles.chatBubbleText}>{msg.text}</Text>
-                </View>
-              ))}
+              {chatMessages.map((msg, idx) => {
+                if (msg.from === 'ai-news') {
+                  return (
+                    <View key={idx} style={styles.aiNewsContainer}>
+                      {msg.news.map((item, nidx) => (
+                        <View key={nidx} style={styles.aiNewsCard}>
+                          <Text style={styles.aiNewsTitle}>{item.title}</Text>
+                          <Text style={styles.aiNewsDesc}>{item.description}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  )
+                }
+                return (
+                  <View
+                    key={idx}
+                    style={[
+                      styles.chatBubble,
+                      msg.from === 'user' ? styles.chatBubbleUser : styles.chatBubbleAI,
+                    ]}
+                  >
+                    <Text style={styles.chatBubbleText}>{msg.text}</Text>
+                  </View>
+                )
+              })}
               {chatLoading && (
                 <ActivityIndicator size="small" color="#0a7ea4" style={{marginTop: 8}} />
               )}
@@ -219,23 +272,66 @@ export default function FeedScreen() {
       <Modal
         visible={!!selectedItem}
         transparent
-        animationType="fade"
+        animationType="slide"
         onRequestClose={() => setSelectedItem(null)}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             {selectedItem && (
-              <>
+              <ScrollView
+                style={{ width: '100%', maxHeight: 440 }}
+                contentContainerStyle={{ paddingBottom: 8, paddingTop: 8 }} // increased from 56 to 80
+                showsVerticalScrollIndicator={true}
+              >
                 <Image source={{ uri: selectedItem.image }} style={styles.modalImage} />
                 <Text style={styles.modalTitle}>{selectedItem.title}</Text>
                 <Text style={styles.modalDetails}>{selectedItem.details}</Text>
+                {/* Chart */}
+                {trendData.length > 0 && (
+                  <>
+                    <Text style={{textAlign: 'center', color: '#888', marginBottom: 4, fontSize: 13}}>
+                      Number of related news articles per day (last 5 days)
+                    </Text>
+                    <LineChart
+                      data={{
+                        labels: Array.from({length: trendData.length}, (_, i) => {
+                          const d = new Date();
+                          d.setDate(d.getDate() - (trendData.length - 1 - i));
+                          return `${d.getMonth()+1}/${d.getDate()}`;
+                        }),
+                        datasets: [{ data: trendData }]
+                      }}
+                      width={288}
+                      height={170}
+                      chartConfig={{
+                        backgroundColor: '#fff',
+                        backgroundGradientFrom: '#fff',
+                        backgroundGradientTo: '#fff',
+                        decimalPlaces: 0,
+                        color: (opacity = 1) => `rgba(10, 126, 164, ${opacity})`,
+                        labelColor: () => '#888',
+                        style: { borderRadius: 8 },
+                        propsForDots: { r: "4", strokeWidth: "2", stroke: "#0a7ea4" }
+                      }}
+                      style={{
+                        marginVertical: 8,
+                        borderRadius: 8,
+                        marginBottom: 8,
+                        alignSelf: 'center',
+                        zIndex: 100,
+                      }}
+                    />
+                    {/* Add this spacer to make sure x-axis labels are visible */}
+                    <View style={{ height: 28 }} />
+                  </>
+                )}
                 <TouchableOpacity
                   style={styles.closeButton}
                   onPress={() => setSelectedItem(null)}
                 >
                   <Text style={styles.closeButtonText}>Close</Text>
                 </TouchableOpacity>
-              </>
+              </ScrollView>
             )}
           </View>
         </View>
@@ -325,9 +421,8 @@ const styles = StyleSheet.create({
   modalContent: {
     backgroundColor: '#fff',
     borderRadius: 18,
-    paddingVertical: 32,
-    paddingHorizontal: 24,
-    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
     width: 320,
     elevation: 8,
     shadowColor: '#0a7ea4',
@@ -455,5 +550,27 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 32,
     borderRadius: 8,
+  },
+  aiNewsContainer: {
+    marginVertical: 6,
+  },
+  aiNewsCard: {
+    backgroundColor: '#fffbe7',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#ffe082',
+    elevation: 2,
+  },
+  aiNewsTitle: {
+    fontWeight: 'bold',
+    fontSize: 16,
+    color: '#e65100',
+    marginBottom: 4,
+  },
+  aiNewsDesc: {
+    fontSize: 14,
+    color: '#444',
   },
 })

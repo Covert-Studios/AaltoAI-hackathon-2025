@@ -132,21 +132,19 @@ async def analyze_video(
 
         chatgpt_prompt = f"""Analyze the following transcription and music info:
 
-Transcription: {transcription}
+        Transcription: {transcription}
 
-Music Info: {music_info}
+        Music Info: {music_info}
 
-Predicted Action: {most_common_action}
-"""
+        Predicted Action: {most_common_action}
+        """
 
         logging.info("Sending prompt to ChatGPT.")
-        chat_response = openai.ChatCompletion.create(
+        client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        chat_response = client.chat.completions.create(
             model="gpt-4o",
             messages=[
-                {
-                    "role": "system",
-                    "content": "You are an expert video and music analyst. Analyze the prompt and predict the virality of this video based on several factors, then offer improvements."
-                },
+                {"role": "system", "content": "You are an expert video and music analyst. Analyze the prompt and predict the virality of this video based on several factors, then offer improvements."},
                 {"role": "user", "content": chatgpt_prompt},
             ],
             max_tokens=500
