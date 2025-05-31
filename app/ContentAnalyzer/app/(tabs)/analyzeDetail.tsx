@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Alert, Touchable
 import { Ionicons } from '@expo/vector-icons'
 import { useRouter, useLocalSearchParams } from 'expo-router'
 import { useAuth } from '@clerk/clerk-expo'
+import Markdown from 'react-native-markdown-display';
 
 const API_BASE_URL = 'http://192.168.82.141:8000' // Prob change for production
 
@@ -70,62 +71,6 @@ export default function AnalyzeDetailScreen() {
     }
   }
 
-  function renderRichResult(result: string) {
-    const lines = result.split('\n');
-    return lines.map((line, idx) => {
-      // Headings
-      if (line.startsWith('### ')) {
-        return (
-          <Text key={idx} style={{ fontSize: 20, fontWeight: 'bold', marginTop: 18, marginBottom: 6, color: '#0a7ea4' }}>
-            {line.replace('### ', '')}
-          </Text>
-        );
-      }
-      // Sub-bold (e.g. **Label:** value or **Label**: value)
-      const subBoldMatch = line.match(/^\*\*([^*]+)\*\*:? ?(.*)/);
-      if (subBoldMatch && subBoldMatch[1] && subBoldMatch[2] !== undefined) {
-        return (
-          <Text key={idx} style={{ marginLeft: 8, marginBottom: 4 }}>
-            <Text style={{ fontWeight: 'bold' }}>{subBoldMatch[1]}{line.includes(':') ? ':' : ''}</Text>
-            {subBoldMatch[2] ? ` ${subBoldMatch[2]}` : ''}
-          </Text>
-        );
-      }
-      // Bold (only if not sub-bold)
-      if (line.startsWith('**') && line.endsWith('**') && !line.includes(':')) {
-        return (
-          <Text key={idx} style={{ fontWeight: 'bold', marginTop: 10, marginBottom: 4 }}>
-            {line.replace(/\*\*/g, '')}
-          </Text>
-        );
-      }
-      // Numbered list
-      if (/^\d+\./.test(line.trim())) {
-        return (
-          <Text key={idx} style={{ marginLeft: 16, marginBottom: 4 }}>
-            <Text style={{ fontWeight: 'bold' }}>{line.trim().split('.')[0]}.</Text>
-            {line.trim().substring(line.trim().indexOf('.') + 1)}
-          </Text>
-        );
-      }
-      // Bulleted list
-      if (line.trim().startsWith('- ')) {
-        return (
-          <Text key={idx} style={{ marginLeft: 16, marginBottom: 4 }}>
-            <Text style={{ fontWeight: 'bold' }}>• </Text>
-            {line.trim().substring(2)}
-          </Text>
-        );
-      }
-      // Default
-      return (
-        <Text key={idx} style={{ marginBottom: 4 }}>
-          {line}
-        </Text>
-      );
-    });
-  }
-
   if (loading) {
     return (
       <View style={styles.centered}>
@@ -157,7 +102,21 @@ export default function AnalyzeDetailScreen() {
       <Text style={styles.date}>{detail.date}</Text>
       <Text style={{ color: '#888', fontSize: 14, marginBottom: 8 }}>ID: {detail.id}</Text>
       <View style={styles.result}>
-        {renderRichResult(detail.result)}
+        <Markdown
+          style={{
+            body: { color: '#222', fontSize: 16 },
+            heading1: { color: '#0a7ea4', fontWeight: 'bold', fontSize: 24, marginTop: 24 },
+            heading2: { color: '#0a7ea4', fontWeight: 'bold', fontSize: 20, marginTop: 18 },
+            heading3: { color: '#0a7ea4', fontWeight: 'bold', fontSize: 18, marginTop: 16 },
+            strong: { fontWeight: 'bold' },
+            bullet_list: { marginLeft: 16 },
+            ordered_list: { marginLeft: 16 },
+            list_item: { marginBottom: 4 },
+            paragraph: { marginBottom: 8 },
+          }}
+        >
+          {detail.result}
+        </Markdown>
       </View>
 
       <TouchableOpacity
