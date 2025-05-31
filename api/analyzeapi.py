@@ -8,6 +8,7 @@ import torch
 from torchvision import transforms
 from PIL import Image
 import cv2  # For frame extraction
+import openai
 
 from analyze_db import insert_analysis, get_analyses_for_user, get_analysis_detail
 from clerk_auth import get_current_user_id
@@ -26,6 +27,9 @@ preprocess = transforms.Compose([
     transforms.ToTensor(),
     transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
 ])
+
+# Load OpenAI API key from environment variables
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 @router.get("/analyze/history")
 def get_analyze_history(user_id: str = Depends(get_current_user_id)):
@@ -73,6 +77,29 @@ async def analyze_video(
             "whisper": whisper_result,
             "clip": clip_results,
         }
+
+        # Query ChatGPT for virality prediction and content suggestions
+        chatgpt_prompt = f"""
+        Based on the following data:
+        - Song: {shazam_result.get('track', 'Unknown')} by {shazam_result.get('artist', 'Unknown')}
+        - Transcription: {whisper_result}
+        - Video Classification: {clip_results}
+
+        1. Predict the virality of this content and explain why.
+        2. Suggest trending content ideas that align with current popular topics.
+        """
+        chatgpt_response = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": "You are a content analysis expert."},
+                {"role": "user", "content": chatgpt_prompt}
+            ]
+        )
+        chatgpt_result = chatgpt_response['choices'][0]['message']['content']
+
+        # Add ChatGPT results to the final result
+        result["chatgpt"] = chatgpt_result
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error analyzing video: {str(e)}")
     finally:
