@@ -5,7 +5,9 @@ router = APIRouter()
 
 @router.get("/trends")
 def get_trends():
-    # Example static data, replace with your own logic or database
+    """
+    DUMMY DATA FOR TRENDS API
+    """ 
     return [
         {
             "id": 1,

@@ -6,3 +6,8 @@ clip-by-openai
 opencv-python
 Pillow
 tqdm
+fastapi
+flask
+python-multipart
+uvicorn
+numpy
