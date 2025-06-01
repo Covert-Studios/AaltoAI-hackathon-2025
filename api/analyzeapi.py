@@ -138,23 +138,26 @@ The data of the video:
 Transcription: {transcription if transcription else "None"},
 Music Info: {music_info if music_info else "No track info found"},
 Most Common Action: {most_common_action if most_common_action else "None"}.
-Video Frames: {len(frames)} frames extracted.
+Analyzed Video Frames: {len(frames)} frames extracted.
 Filename: {video.filename}.
+Video Length: {get_video_length(temp_video_path)} seconds.
 
 Determine the topic of the video based on all that information.
 Add a score from 0 to 100 based on the following factors:
 However, don't base the videos center solely on the most common action, but rather on the overall content and context of the video.
-Give a score based on the following factors (every factor is 25 scores. add them together to get the final score.):
+Give a score based on the following factors (every factor is 20 scores. add them together to get the final score.):
 1. **Music**: Is there a recognizable or trending song? How does it fit the video? 
 2. **Transcription:** What is the spoken content? Does it add value or context?
 3. **Platform Accessibility:** Is the content suitable for platforms like TikTok, Instagram, or YouTube Shorts?
 4. **Visual Appeal & Social Sharing:** How engaging are the visuals? Are they high quality?
+5. **Video Length:** Is the video length appropriate for the platform? Shorter videos tend to perform better, BUT NOT ALWAYS. Check the context of the video.
 
 Example:
-1 - Music: <score>/25 - <score explanation>
-2 - Transcription: <score>/25 - <score explanation>
-3 - Platform Accessibility: <score>/25 - <score explanation>
-4 - Visual Appeal & Social Sharing: <score>/25 - <score explanation>
+1 - Music: <score>/20 - <score explanation>
+2 - Transcription: <score>/20 - <score explanation>
+3 - Platform Accessibility: <score>/20 - <score explanation>
+4 - Visual Appeal & Social Sharing: <score>/20 - <score explanation>
+5 - Video Length: <score>/20 - <score explanation>
 
 Suggestions for improvement:
 <list of suggestions to increase virality based on the above factors>
@@ -240,3 +243,16 @@ def extract_frames(video_path, frame_interval=30):
     cap.release()
     logging.info("Frames extraction complete.")
     return frames
+
+def get_video_length(video_path):
+    cap = cv2.VideoCapture(video_path)
+    if not cap.isOpened():
+        return 0
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    frame_count = cap.get(cv2.CAP_PROP_FRAME_COUNT)
+    cap.release()
+    if fps > 0:
+        duration = frame_count / fps
+    else:
+        duration = 0
+    return duration  # duration in seconds
