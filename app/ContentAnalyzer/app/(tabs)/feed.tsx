@@ -6,7 +6,7 @@ import { useRouter } from 'expo-router'
 import { useAuth } from '@clerk/clerk-expo'
 import { LineChart } from 'react-native-chart-kit'
 
-const API_BASE_URL = 'http://192.168.82.141:8000' // Prob change for production
+const API_BASE_URL = 'http://192.168.0.148:8000' // Prob change for production
 
 // Example categories for the feed
 const CATEGORIES = ['All', 'Tech', 'Science', 'Art', 'Sports']

@@ -41,6 +41,9 @@ Due to time constraints, the CLIP topic detection AI has only been trained on 25
 **Note**:
 You will have to provide your own OpenAI key.
 
+**Note**:
+Change the API_BASE_URL to your IP or domain.
+
 > **Authentication Setup:**  
 > For authentication, you must create your own [Clerk](https://clerk.com/) project and set the required environment variables (`CLERK_PUBLISHABLE_KEY`, `CLERK_JWT_PUBLIC_KEY`, etc.) in your `.env` files.  
 > **Never share your secret keys publicly.**  

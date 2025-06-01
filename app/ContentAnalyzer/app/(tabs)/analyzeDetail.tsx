@@ -6,7 +6,7 @@ import { useAuth } from '@clerk/clerk-expo'
 import Markdown from 'react-native-markdown-display';
 import { AnimatedCircularProgress } from 'react-native-circular-progress';
 
-const API_BASE_URL = 'http://192.168.82.141:8000' // Prob change for production
+const API_BASE_URL = 'http://192.168.0.148:8000' // Prob change for production
 
 export default function AnalyzeDetailScreen() {
   const router = useRouter()

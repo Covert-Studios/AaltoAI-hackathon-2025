@@ -5,7 +5,7 @@ import { Navbar } from '../components/Navbar'
 import { useRouter } from 'expo-router'
 import { useAuth, useUser } from '@clerk/clerk-expo'
 
-const API_BASE_URL = 'http://192.168.82.141:8000' // Prob change for production
+const API_BASE_URL = 'http://192.168.0.148:8000' // Prob change for production
 
 export default function ProfileScreen() {
   const router = useRouter()

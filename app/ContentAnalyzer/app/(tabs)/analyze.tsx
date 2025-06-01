@@ -6,7 +6,7 @@ import { useRouter } from 'expo-router'
 import { useAuth } from '@clerk/clerk-expo'
 import * as ImagePicker from 'expo-image-picker'
 import * as FileSystem from 'expo-file-system'
-const API_BASE_URL = 'http://192.168.82.141:8000' // Prob change for production
+const API_BASE_URL = 'http://192.168.0.148:8000' // Prob change for production
 
 export default function AnalyzeScreen() {
   const router = useRouter()
