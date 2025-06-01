@@ -1,4 +1,3 @@
-# requirements.txt
 # these are the requirements for the api. 
 # please use python 3.11 to ensure compatibility.
 # to install the requirements, run:

@@ -6,6 +6,7 @@
 **Note**:
 Due to time constraints, the CLIP topic detection AI has only been trained on 25 topics. 
 
+
 ---
 
 ## 🔧 How to Get It Working
@@ -16,6 +17,10 @@ Due to time constraints, the CLIP topic detection AI has only been trained on 25
 
    ```bash
    pip install -r requirements.txt
+   ```
+   and in app/ContentAnalyzer
+   ```bash
+   npm install
    ```
 
    Also make sure you have the latest version of ffmpeg installed.
@@ -32,6 +37,15 @@ Due to time constraints, the CLIP topic detection AI has only been trained on 25
    npx expo start
    ```
    Then press 'w' for web, a for android emulator (if available) or just open it on your phone in the Expo Go App by scanning the QR-code
+
+**Note**:
+You will have to provide your own OpenAI key.
+
+> **Authentication Setup:**  
+> For authentication, you must create your own [Clerk](https://clerk.com/) project and set the required environment variables (`CLERK_PUBLISHABLE_KEY`, `CLERK_JWT_PUBLIC_KEY`, etc.) in your `.env` files.  
+> **Never share your secret keys publicly.**  
+>  
+> You will also need to provide your own OpenAI API key in the backend `.env` file as `OPENAI_API_KEY=your-key-here`.
 
 ---
 
