@@ -1,6 +1,6 @@
 # 🎬 SFCA – Short Form Content Analyzer
 
-**SFCA** is an AI-powered content analysis tool designed for evaluating short-form video content like TikToks, Reels, and Shorts. Created during the AaltoAI Hackathon 2025 by Otso (otsuliini) and Oliver (Oltsu-code), SFCA processes visual, audio, and textual elements to analyze trends, patterns, and engagement signals. It also has a place to see all the latest news and trends.
+**SFCA** is an AI-powered content analysis tool designed for evaluating short-form video content like TikToks, Reels, and Shorts. The tool is made for content creators who wish to now how they're video will perform on social media apps before their release Created during the AaltoAI Hackathon 2025 by Otso (otsuliini) and Oliver (Oltsu-code), SFCA processes visual, audio, and textual elements to analyze trends, patterns, and engagement signals. It also has a place to see all the latest news and trends.
 
 ---
 **Note**:
