@@ -70,7 +70,6 @@ python app/main.py --input path/to/video.mp4
 - 🎥 Frame-by-frame video analysis
 - 🔊 Audio feature extraction (tempo, pitch, dynamics)
 - 🧠 Whisper-based transcription & NLP
-- 🌈 Visual flow and cut detection
 - 📊 Engagement heuristics for virality scoring
 
 ---
