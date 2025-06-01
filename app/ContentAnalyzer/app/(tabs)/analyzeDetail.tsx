@@ -151,9 +151,6 @@ export default function AnalyzeDetailScreen() {
         </View>
 
         <View style={styles.result}>
-          <Text style={{ fontSize: 18, fontWeight: '700', color: '#0a7ea4', marginBottom: 8 }}>
-            Analysis & Suggestions
-          </Text>
           <Markdown
             style={{
               body: { color: '#222', fontSize: 16 },

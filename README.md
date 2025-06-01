@@ -3,6 +3,10 @@
 **SFCA** is an AI-powered content analysis tool designed for evaluating short-form video content like TikToks, Reels, and Shorts. Created during the AaltoAI Hackathon 2025 by Otso (otsuliini) and Oliver (Oltsu-code), SFCA processes visual, audio, and textual elements to analyze trends, patterns, and engagement signals. It also has a place to see all the latest news and trends.
 
 ---
+**Note**:
+Due to time constraints, the CLIP topic detection AI has only been trained on 25 topics. 
+
+---
 
 ## 🔧 How to Get It Working
 **Step by step guide**
@@ -32,6 +36,18 @@
 ---
 
 ## How to use?
+**Example Output** 
+**Score** A score out of 100 based of the criteria below.
+1. **Music:** A score out of 20. Using the "shazamio" api we analyze how the song fits the theme and topic of the video. 
+2. **Transcription:** A score out of 20. Using OpenAI's whisper model, we get a transcription of the video to further predict how engaging the video is.
+3. **Platfrom Accessibility:** A score out of 20. What platform is this content suitable for. 
+4. **Visual Appeal & Social Sharing:** A score out of 20. How engaging the topic is.
+5. **Video Length** A score out of 20. Predicts the viewers engagement based of the length of the video.
+
+
+**Suggestions:** A list of suggestions to make the video more engaging.
+
+---
 
 **Features**
    - Video analysis 
@@ -46,6 +62,35 @@
       - You can check more details of them by clicking on them. Including charts of when peak news writng happened of this topic.
 
 
+**Tech Stack**
+---
+
+- **Frontend:**  
+  - React Native (Expo)
+  - TypeScript
+  - Expo Router
+  - Clerk (Authentication)
+  - React Native Markdown Display
+  - React Native Circular Progress
+  - React Native Chart Kit
+  - Expo Haptics
+
+- **Backend:**  
+  - FastAPI (Python)
+  - SQLite (analysis storage)
+  - OpenAI GPT-4o (AI analysis & news)
+  - OpenAI Whisper (audio transcription)
+  - Shazamio (music recognition)
+  - Torch + CLIP (video frame classification)
+  - ffmpeg-python (audio/video processing)
+
+- **Other:**  
+  - NewsAPI (news trends)
+  - Docker/venv (local dev environments)
+  - REST API (JWT Auth via Clerk)
+
+---
+
 ## 📜 License
 
 This project is licensed under the [MIT License](LICENSE).
@@ -56,4 +101,6 @@ This project is licensed under the [MIT License](LICENSE).
 
 We welcome contributions! Please open issues or submit pull requests on GitHub.
 
----
+
+
+

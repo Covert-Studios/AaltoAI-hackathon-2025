@@ -22,15 +22,6 @@ export default function ProfileScreen() {
     }
   }, [isSignedIn, isLoaded, router])
 
-  useEffect(() => {
-    if (isLoaded && isSignedIn && user) {
-      /*fetch(`${API_BASE_URL}/analyses_count?user_id=${user.id}`)
-        .then(res => res.json())
-        .then(data => setAnalysesCount(data.count))
-        .catch(() => setAnalysesCount(null))*/
-    }
-  }, [isLoaded, isSignedIn, user])
-
   const handleTabPress = (tab: string) => {
     if (tab === 'Profile') return
     if (tab === 'Feed') router.replace('/(tabs)/feed')

@@ -145,6 +145,7 @@ Video Length: {get_video_length(temp_video_path)} seconds.
 Determine the topic of the video based on all that information.
 Add a score from 0 to 100 based on the following factors:
 However, don't base the videos center solely on the most common action, but rather on the overall content and context of the video.
+Also keep in mind that the video is meant for social media platforms like TikTok, Instagram, or YouTube Shorts.
 Give a score based on the following factors (every factor is 20 scores. add them together to get the final score.):
 1. **Music**: Is there a recognizable or trending song? How does it fit the video? 
 2. **Transcription:** What is the spoken content? Does it add value or context?
@@ -153,13 +154,15 @@ Give a score based on the following factors (every factor is 20 scores. add them
 5. **Video Length:** Is the video length appropriate for the platform? Shorter videos tend to perform better, BUT NOT ALWAYS. Check the context of the video.
 
 Example:
-1 - Music: <score>/20 - <score explanation>
-2 - Transcription: <score>/20 - <score explanation>
-3 - Platform Accessibility: <score>/20 - <score explanation>
-4 - Visual Appeal & Social Sharing: <score>/20 - <score explanation>
-5 - Video Length: <score>/20 - <score explanation>
+### Analysis Result:
 
-Suggestions for improvement:
+1. **Music: <score>/20** - <score explanation>
+2. **Transcription: <score>/20** - <score explanation>
+3. **Platform Accessibility: <score>/20** - <score explanation>
+4. **Visual Appeal & Social Sharing: <score>/20** - <score explanation>
+5. **Video Length: <score>/20** - <score explanation>
+
+### Suggestions for improvement:
 <list of suggestions to increase virality based on the above factors>
 
 Suggest improvements to increase the video's virality based on these factors as a list.
