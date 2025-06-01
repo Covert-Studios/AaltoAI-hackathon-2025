@@ -16,7 +16,6 @@ pip-wheel-metadata/
 dist/
 build/
 split
-fine_tuned_clip.pth
 UCF-101
 UCF101_frames
 youtube_clips
